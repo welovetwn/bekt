@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36603.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "bektApi", "bektApi.csproj", "{6B6F5749-D374-B443-56AE-1D5B586D531A}"
+EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "bektVue", "..\..\frontend\bektVue.esproj", "{61DBB66E-1556-C8EA-5396-7FA9AA7AACCD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6B6F5749-D374-B443-56AE-1D5B586D531A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B6F5749-D374-B443-56AE-1D5B586D531A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B6F5749-D374-B443-56AE-1D5B586D531A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B6F5749-D374-B443-56AE-1D5B586D531A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61DBB66E-1556-C8EA-5396-7FA9AA7AACCD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61DBB66E-1556-C8EA-5396-7FA9AA7AACCD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61DBB66E-1556-C8EA-5396-7FA9AA7AACCD}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{61DBB66E-1556-C8EA-5396-7FA9AA7AACCD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61DBB66E-1556-C8EA-5396-7FA9AA7AACCD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61DBB66E-1556-C8EA-5396-7FA9AA7AACCD}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{23A09DB9-53E5-451B-B8F4-DDCC7C502F20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23A09DB9-53E5-451B-B8F4-DDCC7C502F20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23A09DB9-53E5-451B-B8F4-DDCC7C502F20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23A09DB9-53E5-451B-B8F4-DDCC7C502F20}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {76B7613B-4F09-442A-8A69-7E763BCDC5B7}
+	EndGlobalSection
+EndGlobal
