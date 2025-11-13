@@ -361,3 +361,24 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# ========== Node / Vue ==========
+node_modules/
+dist/
+*.local
+.env.local
+.env.*.local
+
+# Vite
+*.tsbuildinfo
+vite.config.ts.timestamp*
+vite.config.js.timestamp*
+
+# Editor folders
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ========== Others ==========
+/temp/
+/logs/
