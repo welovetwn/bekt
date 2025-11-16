@@ -6,7 +6,7 @@
         <tr>
           <th v-for="col in columns" :key="col.key" scope="col" 
               class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            {{ col.label }}
+            {{ col.displayName || col.label }}
           </th>
         </tr>
       </thead>
@@ -28,10 +28,11 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
+  columns: { type: Array, required: true }, // 欄位定義
   data: { type: Array, required: true },
-  columns: { type: Array, required: true },
-  loading: { type: Boolean, default: false }
+  title: { type: String, default: '資料列表' }
 });
-defineEmits(['refresh']);
+
+const emit = defineEmits(['refresh']);
 </script>

@@ -1,32 +1,87 @@
 // src/generator/templates.js
+
+// ----------------------------------------------------
+// 輔助函式 1: 安全轉義函式 (必須定義在 TEMPLATES 之前)
+// ----------------------------------------------------
+const escapeJsString = (str) => {
+    if (typeof str !== 'string') {
+        if (str === 0 || str === false) return str;
+        return '';
+    }
+    // 進行多步轉義：捕捉最常見的破壞性字元
+    return str
+        .replace(/\\/g, '\\\\') // 1. 轉義所有的反斜線 (\)
+        .replace(/'/g, "\\'")   // 2. 轉義單引號
+        .replace(/"/g, '\\"')   // 3. 轉義雙引號
+        .replace(/\n/g, '\\n')  // 4. 轉義換行符號
+        .replace(/\r/g, '\\r')  // 5. 轉義回車符號
+        .replace(/\t/g, '\\t');  // 6. 轉義 Tab 符號
+};
+
+// ----------------------------------------------------
+// 輔助函式 2: 根據 Key 創建預設的 Label (確保轉義)
+// ----------------------------------------------------
+function toLabel(str) {
+  const label = str.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+  return escapeJsString(label);
+}
+
+// ----------------------------------------------------
+// 輔助函式 3: 設置 Form 初始值的預設值
+// ----------------------------------------------------
+function defaultValue(type) {
+  return type === 'number' ? '0' : "''";
+}
+
+// ----------------------------------------------------
+// 核心 TEMPLATES 邏輯
+// ----------------------------------------------------
 export const TEMPLATES = {
-  schema: (e) => `// src/schema/${e.lowerName}Schema.js
+  // ⭐ 修正 Schema 模板: 採用 function 寫法並在 Node.js 中先計算字串
+  schema: (e) => {
+    // 1. 計算 tableColumns 陣列字串 (確保 displayName 被轉義且執行)
+    const tableColumns = Object.entries(e.properties)
+      .filter(([k]) => !['createdAt', 'updatedAt'].includes(k))
+      .map(([k, p]) => {
+        // 使用字串串接，確保 escapeJsString 在這裡被執行
+        return `{ key: '${k}', label: '${toLabel(k)}', displayName: '${escapeJsString(p.displayName)}', isSortable: true }`;
+      })
+      .join(',\n  ');
+
+    // 2. 計算 formFields 陣列字串 (確保 displayName 被轉義且執行)
+    const formFields = Object.entries(e.properties)
+      .filter(([k]) => k !== 'id' && !['createdAt', 'updatedAt'].includes(k))
+      .map(([k, p]) => {
+        const type = p.type === 'number' ? 'number' : p.type === 'date' ? 'date' : 'text';
+        // 使用字串串接，確保 escapeJsString 在這裡被執行
+        return `{ key: '${k}', label: '${toLabel(k)}', displayName: '${escapeJsString(p.displayName)}', type: '${type}', validation: { required: ${p.required} } }`;
+      })
+      .join(',\n  ');
+
+    // 3. 計算 initialForm 物件字串
+    const initialForm = Object.keys(e.properties)
+      .filter(k => k !== 'id')
+      .map(k => `${k}: ${defaultValue(e.properties[k].type)},`)
+      .join('\n  ');
+
+
+    // 返回最終的模板字串
+    return `// src/schema/${e.lowerName}Schema.js
 export const ${e.lowerName}TableColumns = [
-  ${Object.entries(e.properties)
-    .filter(([k]) => !['createdAt', 'updatedAt'].includes(k))
-    .map(([k]) => `{ key: '${k}', label: '${toLabel(k)}', isSortable: true }`)
-    .join(',\n  ')}
+  ${tableColumns}
 ];
 
 export const ${e.lowerName}FormFields = [
   { key: 'id', type: 'hidden' },
-  ${Object.entries(e.properties)
-    .filter(([k]) => k !== 'id' && !['createdAt', 'updatedAt'].includes(k))
-    .map(([k, p]) => {
-      const type = p.type === 'number' ? 'number' : p.type === 'date' ? 'date' : 'text';
-      return `{ key: '${k}', label: '${toLabel(k)}', type: '${type}', validation: { required: ${p.required} } }`;
-    })
-    .join(',\n  ')}
+  ${formFields}
 ];
 
 export const initial${e.name}Form = {
-  ${Object.keys(e.properties)
-    .filter(k => k !== 'id')
-    .map(k => `${k}: ${defaultValue(e.properties[k].type)},`)
-    .join('\n  ')}
+  ${initialForm}
 };
-`,
-
+`;
+  },
+  // 保持其他模板不變 (與您的原始檔案一致)
   service: (e) => `// src/services/${e.lowerName}Service.js
 import apiClient from '@/services/apiClient';
 const RESOURCE_URL = '${e.apiPath.replace('/api', '')}';
@@ -83,8 +138,7 @@ export const use${e.name}Store = defineStore('${e.lowerName}', () => {
 });
 `,
 
-  listVue: (e) => `<!-- src/views/${e.lowerName}/${e.name}List.vue -->
-<template>
+  listVue: (e) => `<template>
   <CrudPageLayout title="${e.name} 管理" add-route-name="${e.name}Create">
     <GenericDataTable
       :data="store.items"
@@ -120,8 +174,7 @@ const del = async (id) => {
 </script>
 `,
 
-  formVue: (e) => `<!-- src/views/${e.lowerName}/${e.name}Form.vue -->
-<template>
+  formVue: (e) => `<template>
   <CrudPageLayout :title="\`\${isEdit ? '編輯' : '新增'} ${e.name}\`">
     <div class="max-w-2xl mx-auto">
       <GenericCrudForm
@@ -146,10 +199,8 @@ const store = use${e.name}Store();
 const route = useRoute();
 const router = useRouter();
 
-// ✅ 定義 isEdit，解決 ReferenceError 問題
 const isEdit = computed(() => !!route.params.id);
 
-// 當路由參數改變時，自動載入或重置表單
 watch(
   () => route.params.id,
   async (id) => {
@@ -162,7 +213,6 @@ watch(
   { immediate: true }
 );
 
-// 儲存資料後返回列表頁
 const save = async (data) => {
   await store.save(data);
   router.push({ name: '${e.name}List' });
@@ -178,11 +228,3 @@ export const ${e.lowerName}Routes = [
 ];
 `,
 };
-
-function toLabel(str) {
-  return str.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
-}
-
-function defaultValue(type) {
-  return type === 'number' ? '0' : "''";
-}

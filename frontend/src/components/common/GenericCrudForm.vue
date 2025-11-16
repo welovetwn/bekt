@@ -3,8 +3,8 @@
   <form @submit.prevent="submitForm" class="space-y-6">
     <div v-for="field in fields.filter(f => f.type !== 'hidden')" :key="field.key">
       <label :for="field.key" class="block text-sm font-medium text-gray-700">
-        {{ field.label }}<span v-if="field.validation?.required" class="text-red-500">*</span>
-      </label>
+	  	{{ field.displayName || field.label }}<span v-if="field.validation?.required" class="text-red-500">*</span> 
+	  </label>
       
       <input v-if="field.type === 'text' || field.type === 'number'"
              :type="field.type"
@@ -45,17 +45,32 @@ const props = defineProps({
 
 const emit = defineEmits(['submit', 'cancel']);
 
-// 使用 reactive 確保表單資料可被修改
-const formData = reactive({...props.initialData});
+// 使用 reactive 來創建可響應的表單資料
+const formData = reactive({});
 
-// 確保 initialData 改變時 (如切換新增/編輯)，formData 也能更新
-watch(() => props.initialData, (newVal) => {
-    Object.assign(formData, newVal);
-}, { deep: true });
+// 初始化 formData
+const initializeFormData = () => {
+  // 將 initialData 的屬性複製到 formData
+  // 這樣即使 initialData 改變 (例如從列表切換到編輯)，formData 也會更新
+  // 同時處理新增時 initialData 可能是空物件的情況
+  props.fields.forEach(field => {
+    formData[field.key] = props.initialData[field.key] ?? null;
+  });
+};
 
-function submitForm() {
-    // 這裡應加入驗證邏輯
-    // 假設驗證通過
-    emit('submit', formData);
-}
+// 初次載入時初始化
+initializeFormData();
+
+// 監聽 initialData 變化，以重新初始化表單 (例如從新增頁面切換到編輯頁面)
+watch(() => props.initialData, initializeFormData, { deep: true });
+
+
+const submitForm = () => {
+  // 移除所有為 null 或 undefined 的值，確保只傳送有設定的值
+  const dataToSend = Object.entries(formData)
+    .filter(([, value]) => value !== null && value !== undefined)
+    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+
+  emit('submit', dataToSend);
+};
 </script>

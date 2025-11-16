@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;   // **For 設定 Swagger 的 Securit
+using bektApi.Infrastructure; // ⭐ 1. 新增：引入 Filter 所在的命名空間 (請根據您的實際路徑調整)
+using Swashbuckle.AspNetCore.SwaggerGen; // ⭐ 1. 新增：SchemaFilter 所需的命名空間
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,9 +59,12 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// ** 加入 Swagger JWT 授權設定
+// ** 加入 Swagger JWT 授權設定 (已修正: 移除第二個 AddSwaggerGen 並將 SchemaFilter 加入此處)
 builder.Services.AddSwaggerGen(options =>
 {
+    // ⭐ 修正點 1: 註冊您的自訂 Schema Filter，這樣才會生效
+    options.SchemaFilter<bektApi.Infrastructure.DisplayAttributeSchemaFilter>();
+
     // 1. 定義名為 "Bearer" 的安全配置
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -87,7 +93,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddSwaggerGen();
+// ❌ 修正點 2: 這裡的 builder.Services.AddSwaggerGen(); 已被移除，避免重複設定。
 
 var app = builder.Build();
 

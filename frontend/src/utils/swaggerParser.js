@@ -56,7 +56,12 @@ function extractProperties(schema, swaggerJson) {
 
   const props = {};
   for (const [key, prop] of Object.entries(def.properties || {})) {
+    // ⭐ 核心變動: 在這裡提取 x-display-name
+    const displayName = prop['x-display-name'] || key; 
+    
     props[key] = {
+      // ⭐ 新增: 將中文名稱儲存在 displayName 屬性中
+      displayName: displayName, 
       type: mapType(prop.type, prop.format),
       required: def.required?.includes(key) || false,
     };

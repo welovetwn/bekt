@@ -11,6 +11,7 @@ public class Product
     public string Name { get; set; } = string.Empty;
 
     [MaxLength(500)]
+    [Required(ErrorMessage = "產品名稱不能為空")]
     public string? Description { get; set; }
 
     [Range(0, int.MaxValue)]
