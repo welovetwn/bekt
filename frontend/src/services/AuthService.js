@@ -1,46 +1,42 @@
 // src/services/AuthService.js
 
-// 確保引入了配置好的 axios 實例
-import axios from '@/axios'; 
+// 引入統一的 apiClient
+import apiClient from '@/services/apiClient';
 
-const API_URL = '/Auth/';
+const API_URL = 'Auth/'; // 相對路徑，apiClient 已設定 baseURL 為 /api/
 
 class AuthService {
     /**
-     * 嘗試登入，成功則儲存 Token 並設定 axios 標頭
+     * 嘗試登入
      * @param {string} username
      * @param {string} password
      * @returns {Promise<any>}
      */
     async login(username, password) {
         try {
-            // 假設後端登入 API 位於 /api/Auth/login
-            const response = await axios.post(API_URL + 'login', { username, password });
+            // 使用 apiClient 發送請求
+            const response = await apiClient.post(API_URL + 'login', { username, password });
             
-            // **修改重點：儲存 Token 並設定預設標頭**
             if (response.data.token) {
-                // 將 JWT Token 存入 localStorage
-                localStorage.setItem('userToken', response.data.token);
-                
-                // 設定 axios 實例的預設授權標頭
-                this.setAuthHeader(response.data.token); 
+                // 統一使用 'jwt_token'
+                localStorage.setItem('jwt_token', response.data.token);
+                // 注意：不再需要手動呼叫 setAuthHeader，攔截器會處理
             }
 
-            return response.data; // 回傳包含 Token 的 JwtResponse
+            return response.data;
         } catch (error) {
             console.error('Login failed:', error);
-            // 拋出錯誤讓上層處理
-            throw error; 
+            throw error;
         }
     }
 
     /**
-     * 清除本地 Token 並移除 axios 預設標頭
+     * 登出：清除本地 Token
      */
     logout() {
-        localStorage.removeItem('userToken');
-        // 清除 axios 實例上的預設標頭
-        this.removeAuthHeader(); 
+        // 統一 Key
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('user');
     }
 
     /**
@@ -48,32 +44,11 @@ class AuthService {
      * @returns {string | null}
      */
     getCurrentToken() {
-        return localStorage.getItem('userToken');
+        return localStorage.getItem('jwt_token');
     }
-
-    /**
-     * 設定 axios 實例的預設授權標頭
-     * @param {string} token
-     */
-    setAuthHeader(token) {
-        // 設定所有 axios 請求的預設授權標頭
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    }
-
-    /**
-     * 移除 axios 實例的預設授權標頭
-     */
-    removeAuthHeader() {
-        delete axios.defaults.headers.common['Authorization'];
-    }
+    
+    // 移除 setAuthHeader 與 removeAuthHeader 方法，
+    // 因為 apiClient 的 interceptors 已經動態處理了 Authorization header
 }
 
-// **新增邏輯：應用程式啟動時檢查 Token**
-// 確保在應用程式重載後，如果 localStorage 裡有 Token，仍能自動設定標頭
-const authService = new AuthService();
-const initialToken = authService.getCurrentToken();
-if (initialToken) {
-    authService.setAuthHeader(initialToken);
-}
-
-export default authService;
+export default new AuthService();

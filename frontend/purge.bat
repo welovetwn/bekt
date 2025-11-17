@@ -26,16 +26,6 @@ if exist "src\services\productService.js" del /q "src\services\productService.js
 if exist "src\stores\productStore.js" del /q "src\stores\productStore.js"
 if exist "src\views\product" rd /s /q "src\views\product"
 if exist "src\router\ProductRoutes.js" del /q "src\router\ProductRoutes.js"
-if exist "src\schema\roleSchema.js" del /q "src\schema\roleSchema.js"
-if exist "src\services\roleService.js" del /q "src\services\roleService.js"
-if exist "src\stores\roleStore.js" del /q "src\stores\roleStore.js"
-if exist "src\views\role" rd /s /q "src\views\role"
-if exist "src\router\RoleRoutes.js" del /q "src\router\RoleRoutes.js"
-if exist "src\schema\userSchema.js" del /q "src\schema\userSchema.js"
-if exist "src\services\userService.js" del /q "src\services\userService.js"
-if exist "src\stores\userStore.js" del /q "src\stores\userStore.js"
-if exist "src\views\user" rd /s /q "src\views\user"
-if exist "src\router\UserRoutes.js" del /q "src\router\UserRoutes.js"
 echo.
 echo 嘗試清理空資料夾...
 if exist "src\schema" (rmdir "src\schema" 2>nul || echo   - schema 資料夾非空，保留)

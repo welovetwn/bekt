@@ -49,6 +49,9 @@ export const TEMPLATES = {
       })
       .join(',\n  ');
 
+    // ⭐ 新增：添加操作欄位定義
+    const tableColumnsWithActions = tableColumns + ',\n  { key: \'actions\', label: \'操作\', displayName: \'操作\', isSortable: false }';
+
     const formFields = Object.entries(e.properties)
       .filter(([k]) => k !== 'id' && !['createdAt', 'updatedAt'].includes(k))
       .map(([k, p]) => {
@@ -134,46 +137,128 @@ export const use${e.name}Store = defineStore('${e.lowerName}', () => {
 });
 `,
 
-  // ============================================================
-  // 版型 1: 簡單列表 (傳統表格)
-  // ============================================================
-  simpleListVue: (e) => `<template>
-  <CrudPageLayout title="${e.name} 管理" add-route-name="${e.name}Create">
-    <GenericDataTable
-      :data="store.items"
-      :columns="${e.lowerName}TableColumns"
-      :loading="store.loading"
-      @refresh="store.fetchAll"
-    >
-      <template #cell-actions="{ item }">
-        <button @click="$router.push({ name: '${e.name}Edit', params: { id: item.id } })" 
-          class="text-blue-600 hover:underline">編輯</button>
-        <button @click="del(item.id)" 
-          class="text-red-600 hover:underline ml-2">刪除</button>
-      </template>
-    </GenericDataTable>
-  </CrudPageLayout>
-</template>
+	// ============================================================
+	// 版型 1: 簡單列表 (傳統表格) - ✅ 完全移除組件依賴
+	// ============================================================
+	simpleListVue: (e) => {
+	  // 動態生成表頭欄位
+	  const tableHeaders = Object.entries(e.properties)
+		.filter(([k]) => !['id', 'createdAt', 'updatedAt'].includes(k))
+		.slice(0, 4)
+		.map(([k, p]) => `            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+				  ${p.displayName}
+				</th>`)
+		.join('\n');
 
-<script setup>
-import { onMounted } from 'vue';
-import { use${e.name}Store } from '@/stores/${e.lowerName}Store';
-import { ${e.lowerName}TableColumns } from '@/schema/${e.lowerName}Schema';
-import { ${e.lowerName}Service } from '@/services/${e.lowerName}Service';
-import CrudPageLayout from '@/components/common/CrudPageLayout.vue';
-import GenericDataTable from '@/components/common/GenericDataTable.vue';
+	  // 動態生成表格數據欄位
+	  const tableColumns = Object.keys(e.properties)
+		.filter(k => !['id', 'createdAt', 'updatedAt'].includes(k))
+		.slice(0, 4)
+		.map(k => `            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+				  {{ item.${k} }}
+				</td>`)
+		.join('\n');
 
-const store = use${e.name}Store();
-onMounted(() => store.fetchAll());
+	  return `<template>
+	  <div class="max-w-7xl mx-auto p-6">
+		<!-- 標題區：與其他版型一致 -->
+		<header class="bg-white rounded-xl shadow-sm p-6 mb-6">
+		  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+			<div>
+			  <h1 class="text-3xl font-bold text-gray-800">${e.name} 管理</h1>
+			  <p class="text-gray-600 mt-1">共 {{ store.items.length }} 筆資料</p>
+			</div>
+			<button @click="$router.push({ name: '${e.name}Create' })"
+			  class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium flex items-center gap-2 transition-all">
+			  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+			  </svg>
+			  新增
+			</button>
+		  </div>
+		</header>
 
-const del = async (id) => {
-  if (confirm('確定刪除？')) {
-    await ${e.lowerName}Service.remove(id);
-    store.fetchAll();
-  }
-};
-</script>
-`,
+		<!-- 表格區：完整的 Tailwind 樣式 -->
+		<div class="bg-white rounded-xl shadow-sm overflow-hidden">
+		  <!-- 載入狀態 -->
+		  <div v-if="store.loading" class="p-8 text-center">
+			<div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+			<p class="mt-2 text-gray-600">載入中...</p>
+		  </div>
+
+		  <!-- 資料表格 -->
+		  <table v-else class="min-w-full divide-y divide-gray-200">
+			<thead class="bg-gray-50">
+			  <tr>
+				<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+				  ID
+				</th>
+	${tableHeaders}
+				<th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+				  操作
+				</th>
+			  </tr>
+			</thead>
+			<tbody class="bg-white divide-y divide-gray-200">
+			  <tr v-for="item in store.items" :key="item.id" class="hover:bg-gray-50 transition">
+				<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+				  {{ item.id }}
+				</td>
+	${tableColumns}
+				<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+				  <div class="flex justify-end gap-2">
+					<button @click="editItem(item.id)"
+					  class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-all">
+					  編輯
+					</button>
+					<button @click="deleteItem(item.id)"
+					  class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-md transition-all">
+					  刪除
+					</button>
+				  </div>
+				</td>
+			  </tr>
+			</tbody>
+		  </table>
+
+		  <!-- 空資料提示 -->
+		  <div v-if="!store.loading && !store.items.length" class="p-8 text-center text-gray-500">
+			<svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+			</svg>
+			<p class="text-lg font-medium mb-2">尚無資料</p>
+			<button @click="store.fetchAll()" class="text-blue-600 hover:text-blue-800 text-sm">
+			  點擊重新載入
+			</button>
+		  </div>
+		</div>
+	  </div>
+	</template>
+
+	<script setup>
+	import { onMounted } from 'vue';
+	import { useRouter } from 'vue-router';
+	import { use${e.name}Store } from '@/stores/${e.lowerName}Store';
+	import { ${e.lowerName}Service } from '@/services/${e.lowerName}Service';
+
+	const router = useRouter();
+	const store = use${e.name}Store();
+
+	const editItem = (id) => {
+	  router.push({ name: '${e.name}Edit', params: { id } });
+	};
+
+	const deleteItem = async (id) => {
+	  if (confirm('確定刪除？')) {
+		await ${e.lowerName}Service.remove(id);
+		store.fetchAll();
+	  }
+	};
+
+	onMounted(() => store.fetchAll());
+	</script>
+	`;
+	},
 
   // ============================================================
   // 版型 2: 卡片網格 (保持不變)
