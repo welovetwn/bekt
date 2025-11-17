@@ -1,0 +1,4730 @@
+﻿// 合併檔案 - 產生時間: 2025-11-17 13:38:24
+// 總共合併 86 個檔案
+================================================================================
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Controllers\AuthController.cs
+// 檔案名稱: AuthController.cs
+// ============================================
+
+using Microsoft.AspNetCore.Mvc;
+using bektApi.Models;
+using bektApi.Services;
+
+namespace bektApi.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
+{
+    private readonly IAuthService _auth;
+
+    public AuthController(IAuthService auth) => _auth = auth;
+
+    [HttpPost("login")]
+    public async Task<ActionResult<JwtResponse>> Login([FromBody] LoginRequest request)
+    {
+        var result = await _auth.LoginAsync(request);
+        if (result == null) return Unauthorized("帳號或密碼錯誤");
+        return Ok(result);
+    }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Controllers\ProductsController.cs
+// 檔案名稱: ProductsController.cs
+// ============================================
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using bektApi.Models;
+using bektApi.Services;
+using bektApi.DTOs;
+
+namespace bektApi.Controllers;
+
+/// <summary>
+/// 產品管理控制器 - 提供產品 CRUD API
+/// </summary>
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class ProductsController : ControllerBase
+{
+    private readonly IProductService _service;
+
+    public ProductsController(IProductService service) => _service = service;
+
+    /// <summary>
+    /// 取得所有產品
+    /// </summary>
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll()
+        => Ok(await _service.GetAllAsync());
+
+    /// <summary>
+    /// 依 ID 取得單一產品
+    /// </summary>
+    [HttpGet("{id}")]
+    public async Task<ActionResult<ProductDto>> Get(int id)
+    {
+        var product = await _service.GetByIdAsync(id);
+        return product == null ? NotFound("找不到該產品") : Ok(product);
+    }
+
+    /// <summary>
+    /// 建立新產品
+    /// </summary>
+    [HttpPost]
+    public async Task<ActionResult<ProductDto>> Create([FromBody] Product product)
+    {
+        var created = await _service.CreateAsync(product);
+        return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+    }
+
+    /// <summary>
+    /// 更新產品
+    /// </summary>
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] Product product)
+    {
+        if (id != product.Id) return BadRequest("ID 不一致");
+        await _service.UpdateAsync(id, product);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// 刪除產品
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        await _service.DeleteAsync(id);
+        return NoContent();
+    }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Controllers\RolesController.cs
+// 檔案名稱: RolesController.cs
+// ============================================
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using bektApi.Models;
+using bektApi.Services;
+using bektApi.DTOs;
+
+namespace bektApi.Controllers;
+
+/// <summary>
+/// 角色管理控制器 - 提供角色 CRUD API
+/// </summary>
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class RolesController : ControllerBase
+{
+    private readonly IRoleService _service;
+
+    public RolesController(IRoleService service) => _service = service;
+
+    /// <summary>
+    /// 取得所有角色
+    /// </summary>
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<RoleDto>>> GetAll()
+        => Ok(await _service.GetAllAsync());
+
+    /// <summary>
+    /// 依 ID 取得單一角色
+    /// </summary>
+    [HttpGet("{id}")]
+    public async Task<ActionResult<RoleDto>> Get(int id)
+    {
+        var role = await _service.GetByIdAsync(id);
+        return role == null ? NotFound("找不到該角色") : Ok(role);
+    }
+
+    /// <summary>
+    /// 建立新角色
+    /// </summary>
+    [HttpPost]
+    public async Task<ActionResult<RoleDto>> Create([FromBody] Role role)
+    {
+        var created = await _service.CreateAsync(role);
+        return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+    }
+
+    /// <summary>
+    /// 更新角色
+    /// </summary>
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] Role role)
+    {
+        if (id != role.Id) return BadRequest("ID 不一致");
+        await _service.UpdateAsync(id, role);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// 刪除角色
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        await _service.DeleteAsync(id);
+        return NoContent();
+    }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Controllers\UsersController.cs
+// 檔案名稱: UsersController.cs
+// ============================================
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using bektApi.Models;
+using bektApi.Services;
+using bektApi.DTOs;
+
+namespace bektApi.Controllers;
+
+/// <summary>
+/// 使用者管理控制器 - 提供使用者 CRUD API
+/// </summary>
+[ApiController]
+[Route("api/[controller]")]
+[Authorize] // 需登入
+public class UsersController : ControllerBase
+{
+    private readonly IUserService _service;
+
+    public UsersController(IUserService service) => _service = service;
+
+    /// <summary>
+    /// 取得所有使用者
+    /// </summary>
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetAll()
+        => Ok(await _service.GetAllAsync());
+
+    /// <summary>
+    /// 依 ID 取得單一使用者
+    /// </summary>
+    [HttpGet("{id}")]
+    public async Task<ActionResult<UserDto>> Get(int id)
+    {
+        var user = await _service.GetByIdAsync(id);
+        return user == null ? NotFound("找不到該使用者") : Ok(user);
+    }
+
+    /// <summary>
+    /// 建立新使用者
+    /// </summary>
+    /// <remarks>需提供 password 參數</remarks>
+    [HttpPost]
+    public async Task<ActionResult<UserDto>> Create([FromBody] User user, [FromQuery] string password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            return BadRequest("密碼為必填欄位");
+        
+        var created = await _service.CreateAsync(user, password);
+        return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+    }
+
+    /// <summary>
+    /// 更新使用者
+    /// </summary>
+    /// <remarks>password 為選填，若提供則更新密碼</remarks>
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] User user, [FromQuery] string? password = null)
+    {
+        if (id != user.Id) return BadRequest("ID 不一致");
+        await _service.UpdateAsync(id, user, password);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// 刪除使用者
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        await _service.DeleteAsync(id);
+        return NoContent();
+    }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Data\AppDbContext.cs
+// 檔案名稱: AppDbContext.cs
+// ============================================
+
+// backend/bektApi/Data/AppDbContext.cs
+using Microsoft.EntityFrameworkCore;
+using bektApi.Models;
+
+namespace bektApi.Data;
+
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<Product> Products => Set<Product>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // 靜態資料：角色（無動態值）
+        modelBuilder.Entity<Role>().HasData(
+            new Role { Id = 1, Name = "系統管理員", Description = "擁有所有權限", Permissions = "{\"all\": true}" },
+            new Role { Id = 2, Name = "一般使用者", Description = "僅能查看產品", Permissions = "{\"products\": true}" }
+        );
+
+        // User 資料移到 SeedData，避免 HasData 動態值
+    }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Data\bekt-dev.db
+// 檔案名稱: bekt-dev.db
+// ============================================
+
+// 錯誤: 無法讀取此檔案 - The process cannot access the file 'D:\Try\251117-1138\backend\bektApi\Data\bekt-dev.db' because it is being used by another process.
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Data\bekt-dev.db-shm
+// 檔案名稱: bekt-dev.db-shm
+// ============================================
+
+// 錯誤: 無法讀取此檔案 - The process cannot access the file 'D:\Try\251117-1138\backend\bektApi\Data\bekt-dev.db-shm' because it is being used by another process.
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Data\bekt-dev.db-wal
+// 檔案名稱: bekt-dev.db-wal
+// ============================================
+
+// 錯誤: 無法讀取此檔案 - The process cannot access the file 'D:\Try\251117-1138\backend\bektApi\Data\bekt-dev.db-wal' because it is being used by another process.
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Data\SeedData.cs
+// 檔案名稱: SeedData.cs
+// ============================================
+
+// backend/bektApi/Data/SeedData.cs
+using bektApi.Models;
+using bektApi.Utils;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+
+namespace bektApi.Data;
+
+public static class SeedData
+{
+    private const int PBKDF2_ITERATIONS = 10000;
+    private const int SALT_SIZE = 32;
+    private const int HASH_SIZE = 32;
+
+    public static void Initialize(AppDbContext db)
+    {
+        if (db.Users.Any()) return;
+
+        var admin = new User
+        {
+            Id = 1,
+            Username = "admin",
+            DisplayName = "系統管理員",
+            RoleId = 1,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            PasswordHash = PasswordHelper.HashPassword("admin123")  // 使用你的 PBKDF2
+        };
+
+        db.Users.Add(admin);
+        db.SaveChanges();
+    }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\DTOs\ProductDto.cs
+// 檔案名稱: ProductDto.cs
+// ============================================
+
+// backend/bektApi/DTOs/ProductDto.cs
+using System.ComponentModel.DataAnnotations;
+namespace bektApi.DTOs;
+
+public class ProductDto
+{
+    public int Id { get; set; }
+    [Display(Name = "產品名稱")]
+    public string Name { get; set; } = string.Empty;
+    [Display(Name = "產品內容")]
+    public string? Description { get; set; }
+    [Display(Name = "庫存數量")]
+    public int Quantity { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\DTOs\RoleDto.cs
+// 檔案名稱: RoleDto.cs
+// ============================================
+
+// backend/bektApi/DTOs/RoleDto.cs
+using System.ComponentModel.DataAnnotations;
+namespace bektApi.DTOs;
+
+public class RoleDto
+{
+    public int Id { get; set; }
+    [Display(Name = "角色名稱")]
+    public string Name { get; set; } = string.Empty;
+    [Display(Name = "角色內容")]
+    public string? Description { get; set; }
+    [Display(Name = "權控")]
+    public string Permissions { get; set; } = "{}";
+    [Display(Name = "使用者數量")]
+    public int UserCount { get; set; }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\DTOs\UserDto.cs
+// 檔案名稱: UserDto.cs
+// ============================================
+
+// backend/bektApi/DTOs/UserDto.cs
+using System.ComponentModel.DataAnnotations;
+namespace bektApi.DTOs;
+
+public class UserDto
+{
+    public int Id { get; set; }
+    [Display(Name = "帳號")]
+    public string Username { get; set; } = string.Empty;
+    [Display(Name = "使用者名稱")]
+    public string DisplayName { get; set; } = string.Empty;
+    [Display(Name = "角色")]
+    public int RoleId { get; set; }
+    [Display(Name = "角色名稱")]
+    public string RoleName { get; set; } = string.Empty;
+    [Display(Name = "生效")]
+    public bool IsActive { get; set; }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\DTOs\UserResponseDto.cs
+// 檔案名稱: UserResponseDto.cs
+// ============================================
+
+// DTOs/UserResponseDto.cs
+using System.ComponentModel.DataAnnotations;
+namespace bektApi.DTOs;
+
+public class UserResponseDto
+{
+    public int Id { get; set; }
+    [Display(Name = "帳號")]
+    public string Username { get; set; } = string.Empty;
+    [Display(Name = "使用者名稱")]
+    public string DisplayName { get; set; } = string.Empty;
+    [Display(Name = "角色")]
+    public int RoleId { get; set; }
+    [Display(Name = "角色名稱")]
+    public string RoleName { get; set; } = string.Empty;
+    [Display(Name = "生效")]
+    public bool IsActive { get; set; }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Infrastructure\DisplayAttributeSchemaFilter.cs
+// 檔案名稱: DisplayAttributeSchemaFilter.cs
+// ============================================
+
+// Infrastructure/DisplayAttributeSchemaFilter.cs
+using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using System.ComponentModel.DataAnnotations;
+using System.Reflection;
+
+namespace bektApi.Infrastructure
+{
+    public class DisplayAttributeSchemaFilter : ISchemaFilter
+    {
+        public void Apply(OpenApiSchema schema, SchemaFilterContext context)
+        {
+            if (context.Type.IsAbstract || context.Type.IsInterface || context.Type.GetProperties() == null)
+                return;
+
+            foreach (var property in context.Type.GetProperties())
+            {
+                var displayAttribute = property.GetCustomAttribute<DisplayAttribute>();
+
+                if (displayAttribute != null && displayAttribute.Name != null)
+                {
+                    // ⭐ 核心修正: 將屬性名轉換為 camelCase
+                    string camelCaseKey = ToCamelCase(property.Name);
+
+                    if (schema.Properties.ContainsKey(camelCaseKey))
+                    {
+                        var propertySchema = schema.Properties[camelCaseKey];
+
+                        if (!propertySchema.Extensions.ContainsKey("x-display-name"))
+                        {
+                            propertySchema.Extensions.Add("x-display-name",
+                                new Microsoft.OpenApi.Any.OpenApiString(displayAttribute.Name));
+                        }
+                    }
+                }
+            }
+        }
+
+        // ⭐ 新增輔助方法: 將 PascalCase 轉換為 camelCase
+        private static string ToCamelCase(string str)
+        {
+            if (string.IsNullOrEmpty(str) || char.IsLower(str[0]))
+                return str;
+
+            return char.ToLowerInvariant(str[0]) + str.Substring(1);
+        }
+    }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Migrations\20251108152948_InitialCreate.cs
+// 檔案名稱: 20251108152948_InitialCreate.cs
+// ============================================
+
+using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
+namespace bektApi.Migrations
+{
+    /// <inheritdoc />
+    public partial class InitialCreate : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.CreateTable(
+                name: "Products",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    Quantity = table.Column<int>(type: "INTEGER", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Products", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Roles",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    Permissions = table.Column<string>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Roles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Users",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Username = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    DisplayName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    PasswordHash = table.Column<string>(type: "TEXT", nullable: false),
+                    RoleId = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Users", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Users_Roles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "Roles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.InsertData(
+                table: "Roles",
+                columns: new[] { "Id", "Description", "Name", "Permissions" },
+                values: new object[,]
+                {
+                    { 1, "擁有所有權限", "系統管理員", "{\"all\": true}" },
+                    { 2, "僅能查看產品", "一般使用者", "{\"products\": true}" }
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_RoleId",
+                table: "Users",
+                column: "RoleId");
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropTable(
+                name: "Products");
+
+            migrationBuilder.DropTable(
+                name: "Users");
+
+            migrationBuilder.DropTable(
+                name: "Roles");
+        }
+    }
+}
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Migrations\20251108152948_InitialCreate.Designer.cs
+// 檔案名稱: 20251108152948_InitialCreate.Designer.cs
+// ============================================
+
+// <auto-generated />
+using System;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using bektApi.Data;
+
+#nullable disable
+
+namespace bektApi.Migrations
+{
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20251108152948_InitialCreate")]
+    partial class InitialCreate
+    {
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        {
+#pragma warning disable 612, 618
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
+
+            modelBuilder.Entity("bektApi.Models.Product", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("bektApi.Models.Role", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Permissions")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Roles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "擁有所有權限",
+                            Name = "系統管理員",
+                            Permissions = "{\"all\": true}"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "僅能查看產品",
+                            Name = "一般使用者",
+                            Permissions = "{\"products\": true}"
+                        });
+                });
+
+            modelBuilder.Entity("bektApi.Models.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("bektApi.Models.User", b =>
+                {
+                    b.HasOne("bektApi.Models.Role", "Role")
+                        .WithMany("Users")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("bektApi.Models.Role", b =>
+                {
+                    b.Navigation("Users");
+                });
+#pragma warning restore 612, 618
+        }
+    }
+}
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Migrations\20251114072816_ChangeModel.cs
+// 檔案名稱: 20251114072816_ChangeModel.cs
+// ============================================
+
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace bektApi.Migrations
+{
+    /// <inheritdoc />
+    public partial class ChangeModel : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.AlterColumn<string>(
+                name: "Description",
+                table: "Products",
+                type: "TEXT",
+                maxLength: 500,
+                nullable: false,
+                defaultValue: "",
+                oldClrType: typeof(string),
+                oldType: "TEXT",
+                oldMaxLength: 500,
+                oldNullable: true);
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.AlterColumn<string>(
+                name: "Description",
+                table: "Products",
+                type: "TEXT",
+                maxLength: 500,
+                nullable: true,
+                oldClrType: typeof(string),
+                oldType: "TEXT",
+                oldMaxLength: 500);
+        }
+    }
+}
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Migrations\20251114072816_ChangeModel.Designer.cs
+// 檔案名稱: 20251114072816_ChangeModel.Designer.cs
+// ============================================
+
+// <auto-generated />
+using System;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using bektApi.Data;
+
+#nullable disable
+
+namespace bektApi.Migrations
+{
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20251114072816_ChangeModel")]
+    partial class ChangeModel
+    {
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        {
+#pragma warning disable 612, 618
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.11");
+
+            modelBuilder.Entity("bektApi.Models.Product", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("bektApi.Models.Role", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Permissions")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Roles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "擁有所有權限",
+                            Name = "系統管理員",
+                            Permissions = "{\"all\": true}"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "僅能查看產品",
+                            Name = "一般使用者",
+                            Permissions = "{\"products\": true}"
+                        });
+                });
+
+            modelBuilder.Entity("bektApi.Models.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("bektApi.Models.User", b =>
+                {
+                    b.HasOne("bektApi.Models.Role", "Role")
+                        .WithMany("Users")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("bektApi.Models.Role", b =>
+                {
+                    b.Navigation("Users");
+                });
+#pragma warning restore 612, 618
+        }
+    }
+}
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Migrations\AppDbContextModelSnapshot.cs
+// 檔案名稱: AppDbContextModelSnapshot.cs
+// ============================================
+
+// <auto-generated />
+using System;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using bektApi.Data;
+
+#nullable disable
+
+namespace bektApi.Migrations
+{
+    [DbContext(typeof(AppDbContext))]
+    partial class AppDbContextModelSnapshot : ModelSnapshot
+    {
+        protected override void BuildModel(ModelBuilder modelBuilder)
+        {
+#pragma warning disable 612, 618
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.11");
+
+            modelBuilder.Entity("bektApi.Models.Product", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("bektApi.Models.Role", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Permissions")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Roles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "擁有所有權限",
+                            Name = "系統管理員",
+                            Permissions = "{\"all\": true}"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "僅能查看產品",
+                            Name = "一般使用者",
+                            Permissions = "{\"products\": true}"
+                        });
+                });
+
+            modelBuilder.Entity("bektApi.Models.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("bektApi.Models.User", b =>
+                {
+                    b.HasOne("bektApi.Models.Role", "Role")
+                        .WithMany("Users")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("bektApi.Models.Role", b =>
+                {
+                    b.Navigation("Users");
+                });
+#pragma warning restore 612, 618
+        }
+    }
+}
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Models\JwtResponse.cs
+// 檔案名稱: JwtResponse.cs
+// ============================================
+
+// Models/JwtResponse.cs
+using bektApi.DTOs;
+
+namespace bektApi.Models;
+
+public class JwtResponse
+{
+    public string Token { get; set; } = string.Empty;
+    public UserResponseDto User { get; set; } = null!;
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Models\LoginRequest.cs
+// 檔案名稱: LoginRequest.cs
+// ============================================
+
+namespace bektApi.Models;
+
+public class LoginRequest
+{
+    public string Username { get; set; } = null!;
+    public string Password { get; set; } = null!;
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Models\Product.cs
+// 檔案名稱: Product.cs
+// ============================================
+
+// backend/bektApi/Models/Product.cs
+using System.ComponentModel.DataAnnotations;
+
+namespace bektApi.Models;
+
+public class Product
+{
+    public int Id { get; set; }
+
+    [Required, MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    [Required(ErrorMessage = "產品名稱不能為空")]
+    public string? Description { get; set; }
+
+    [Range(0, int.MaxValue)]
+    public int Quantity { get; set; } = 0;
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Models\Role.cs
+// 檔案名稱: Role.cs
+// ============================================
+
+// backend/bektApi/Models/Role.cs
+using System.ComponentModel.DataAnnotations;
+
+namespace bektApi.Models;
+
+public class Role
+{
+    public int Id { get; set; }
+
+    [Required, MaxLength(50)]
+    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(200)]
+    public string? Description { get; set; }
+
+    [Required]
+    public string Permissions { get; set; } = "{}";
+
+    public ICollection<User> Users { get; set; } = new List<User>();
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Models\User.cs
+// 檔案名稱: User.cs
+// ============================================
+
+// backend/bektApi/Models/User.cs
+using System.ComponentModel.DataAnnotations;
+
+namespace bektApi.Models;
+
+public class User
+{
+    public int Id { get; set; }
+
+    [Required, MaxLength(50)]
+    public string Username { get; set; } = string.Empty;
+
+    [Required, MaxLength(100)]
+    public string DisplayName { get; set; } = string.Empty;
+
+    [Required]
+    public string PasswordHash { get; set; } = string.Empty;
+
+    public int RoleId { get; set; }
+    public Role Role { get; set; } = null!;
+
+    public bool IsActive { get; set; } = true;
+
+    public DateTime CreatedAt { get; set; }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Properties\launchSettings.json
+// 檔案名稱: launchSettings.json
+// ============================================
+
+{
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:5000",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "https": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5001;http://localhost:5000",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Services\AuthService.cs
+// 檔案名稱: AuthService.cs
+// ============================================
+
+using bektApi.Data;
+using bektApi.DTOs;
+using bektApi.Models;
+using bektApi.Utils;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+
+namespace bektApi.Services;
+
+public class AuthService : IAuthService
+{
+    private readonly AppDbContext _db;
+    private readonly IConfiguration _config;
+    private const int PBKDF2_ITERATIONS = 10000; // 可調整：10k~100k
+    private const int SALT_SIZE = 32; // 256-bit
+    private const int HASH_SIZE = 32; // 256-bit
+
+    public AuthService(AppDbContext db, IConfiguration config)
+    {
+        _db = db;
+        _config = config;
+    }
+
+    public async Task<JwtResponse?> LoginAsync(LoginRequest request)
+    {
+        var user = await _db.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Username == request.Username && u.IsActive);
+
+        if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
+            return null;
+
+        // 自動升級舊密碼
+        if (IsLegacySha256Hash(user.PasswordHash))
+        {
+            user.PasswordHash = HashPasswordWithPbkdf2(request.Password);
+            await _db.SaveChangesAsync();
+        }
+
+        var token = GenerateJwtToken(user);
+
+        return new JwtResponse
+        {
+            Token = token,
+            User = new UserResponseDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                DisplayName = user.DisplayName ?? user.Username,
+                RoleId = user.RoleId,
+                RoleName = user.Role.Name,
+                IsActive = user.IsActive
+            }
+        };
+    }
+
+    private string GenerateJwtToken(User user)
+    {
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.Role, user.Role.Name),
+            new Claim("displayName", user.DisplayName ?? user.Username)
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: _config["Jwt:Issuer"],
+            audience: _config["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.Now.AddHours(8),
+            signingCredentials: creds);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    // 新增：PBKDF2 驗證
+    private bool VerifyPassword(string password, string storedHash)
+    {
+        // 支援舊 SHA256 格式（過渡期）
+        if (IsLegacySha256Hash(storedHash))
+        {
+            using var sha256 = SHA256.Create();
+            var computed = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
+            return computed == storedHash;
+        }
+
+        // PBKDF2 格式
+        var parts = storedHash.Split('|');
+        if (parts.Length != 4 || parts[0] != "PBKDF2") return false;
+
+        var iterations = int.Parse(parts[1]);
+        var salt = Convert.FromBase64String(parts[2]);
+        var hash = parts[3];
+
+        using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, iterations, HashAlgorithmName.SHA256);
+        var testHash = Convert.ToBase64String(pbkdf2.GetBytes(HASH_SIZE));
+
+        return testHash == hash;
+    }
+
+    // 判斷是否為舊 SHA256 格式
+    private static bool IsLegacySha256Hash(string hash)
+    {
+        return !hash.Contains('|') && hash.Length == 44; // Base64(SHA256) = 44 字元
+    }
+
+    // 產生新 PBKDF2 密碼
+    private string HashPasswordWithPbkdf2(string password)
+    {
+        var salt = RandomNumberGenerator.GetBytes(SALT_SIZE);
+        using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, PBKDF2_ITERATIONS, HashAlgorithmName.SHA256);
+        var hash = Convert.ToBase64String(pbkdf2.GetBytes(HASH_SIZE));
+        return $"PBKDF2|{PBKDF2_ITERATIONS}|{Convert.ToBase64String(salt)}|{hash}";
+    }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Services\IAuthService.cs
+// 檔案名稱: IAuthService.cs
+// ============================================
+
+using bektApi.Models;
+
+namespace bektApi.Services;
+
+public interface IAuthService
+{
+    Task<JwtResponse?> LoginAsync(LoginRequest request);
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Services\IProductService.cs
+// 檔案名稱: IProductService.cs
+// ============================================
+
+using bektApi.DTOs;
+using bektApi.Models;
+
+namespace bektApi.Services;
+
+/// <summary>
+/// 產品服務介面 - 定義產品相關 CRUD 作業
+/// </summary>
+public interface IProductService
+{
+    /// <summary>
+    /// 取得所有產品
+    /// </summary>
+    Task<IEnumerable<ProductDto>> GetAllAsync();
+
+    /// <summary>
+    /// 依 ID 取得單一產品
+    /// </summary>
+    Task<ProductDto?> GetByIdAsync(int id);
+
+    /// <summary>
+    /// 建立新產品
+    /// </summary>
+    Task<ProductDto> CreateAsync(Product product);
+
+    /// <summary>
+    /// 更新產品
+    /// </summary>
+    Task UpdateAsync(int id, Product product);
+
+    /// <summary>
+    /// 刪除產品
+    /// </summary>
+    Task DeleteAsync(int id);
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Services\IRoleService.cs
+// 檔案名稱: IRoleService.cs
+// ============================================
+
+using bektApi.DTOs;
+using bektApi.Models;
+
+namespace bektApi.Services;
+
+/// <summary>
+/// 角色服務介面 - 定義角色相關 CRUD 作業
+/// </summary>
+public interface IRoleService
+{
+    /// <summary>
+    /// 取得所有角色
+    /// </summary>
+    Task<IEnumerable<RoleDto>> GetAllAsync();
+
+    /// <summary>
+    /// 依 ID 取得單一角色
+    /// </summary>
+    Task<RoleDto?> GetByIdAsync(int id);
+
+    /// <summary>
+    /// 建立新角色
+    /// </summary>
+    Task<RoleDto> CreateAsync(Role role);
+
+    /// <summary>
+    /// 更新角色
+    /// </summary>
+    Task UpdateAsync(int id, Role role);
+
+    /// <summary>
+    /// 刪除角色
+    /// </summary>
+    Task DeleteAsync(int id);
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Services\IUserService.cs
+// 檔案名稱: IUserService.cs
+// ============================================
+
+using bektApi.DTOs;
+using bektApi.Models;
+
+namespace bektApi.Services;
+
+/// <summary>
+/// 使用者服務介面 - 定義使用者相關 CRUD 作業
+/// </summary>
+public interface IUserService
+{
+    /// <summary>
+    /// 取得所有使用者
+    /// </summary>
+    Task<IEnumerable<UserDto>> GetAllAsync();
+
+    /// <summary>
+    /// 依 ID 取得單一使用者
+    /// </summary>
+    Task<UserDto?> GetByIdAsync(int id);
+
+    /// <summary>
+    /// 建立新使用者（含密碼雜湊）
+    /// </summary>
+    Task<UserDto> CreateAsync(User user, string password);
+
+    /// <summary>
+    /// 更新使用者（密碼為選填）
+    /// </summary>
+    Task UpdateAsync(int id, User user, string? password = null);
+
+    /// <summary>
+    /// 刪除使用者
+    /// </summary>
+    Task DeleteAsync(int id);
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Services\ProductService.cs
+// 檔案名稱: ProductService.cs
+// ============================================
+
+using Microsoft.EntityFrameworkCore;
+using bektApi.Data;
+using bektApi.DTOs;
+using bektApi.Models;
+
+namespace bektApi.Services;
+
+/// <summary>
+/// 產品服務實作 - 處理產品 CRUD 與時間戳記
+/// </summary>
+public class ProductService : IProductService
+{
+    private readonly AppDbContext _db;
+
+    public ProductService(AppDbContext db) => _db = db;
+
+    /// <summary>
+    /// 取得所有產品
+    /// </summary>
+    public async Task<IEnumerable<ProductDto>> GetAllAsync() =>
+        await _db.Products
+            .OrderBy(p => p.Name)
+            .Select(p => new ProductDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Quantity = p.Quantity
+            })
+            .ToListAsync();
+
+    /// <summary>
+    /// 依 ID 取得單一產品
+    /// </summary>
+    public async Task<ProductDto?> GetByIdAsync(int id) =>
+        await _db.Products
+            .Where(p => p.Id == id)
+            .Select(p => new ProductDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Quantity = p.Quantity
+            })
+            .FirstOrDefaultAsync();
+
+    /// <summary>
+    /// 建立新產品（自動填入建立時間）
+    /// </summary>
+    public async Task<ProductDto> CreateAsync(Product product)
+    {
+        product.CreatedAt = DateTime.UtcNow;
+        _db.Products.Add(product);
+        await _db.SaveChangesAsync();
+        return (await GetByIdAsync(product.Id))!;
+    }
+
+    /// <summary>
+    /// 更新產品（自動更新修改時間）
+    /// </summary>
+    public async Task UpdateAsync(int id, Product product)
+    {
+        var existing = await _db.Products.FindAsync(id) 
+            ?? throw new KeyNotFoundException("找不到產品");
+
+        existing.Name = product.Name;
+        existing.Description = product.Description;
+        existing.Quantity = product.Quantity;
+        existing.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// 刪除產品
+    /// </summary>
+    public async Task DeleteAsync(int id)
+    {
+        var product = await _db.Products.FindAsync(id);
+        if (product != null)
+        {
+            _db.Products.Remove(product);
+            await _db.SaveChangesAsync();
+        }
+    }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Services\RoleService.cs
+// 檔案名稱: RoleService.cs
+// ============================================
+
+using Microsoft.EntityFrameworkCore;
+using bektApi.Data;
+using bektApi.DTOs;
+using bektApi.Models;
+
+namespace bektApi.Services;
+
+/// <summary>
+/// 角色服務實作 - 處理角色 CRUD
+/// </summary>
+public class RoleService : IRoleService
+{
+    private readonly AppDbContext _db;
+
+    public RoleService(AppDbContext db) => _db = db;
+
+    public async Task<IEnumerable<RoleDto>> GetAllAsync() =>
+        await _db.Roles
+            .Select(r => new RoleDto
+            {
+                Id = r.Id,
+                Name = r.Name,
+                Description = r.Description,
+                Permissions = r.Permissions
+            })
+            .ToListAsync();
+
+    public async Task<RoleDto?> GetByIdAsync(int id) =>
+        await _db.Roles
+            .Where(r => r.Id == id)
+            .Select(r => new RoleDto
+            {
+                Id = r.Id,
+                Name = r.Name,
+                Description = r.Description,
+                Permissions = r.Permissions
+            })
+            .FirstOrDefaultAsync();
+
+    public async Task<RoleDto> CreateAsync(Role role)
+    {
+        _db.Roles.Add(role);
+        await _db.SaveChangesAsync();
+        return (await GetByIdAsync(role.Id))!;
+    }
+
+    public async Task UpdateAsync(int id, Role role)
+    {
+        var existing = await _db.Roles.FindAsync(id) ?? throw new KeyNotFoundException("找不到角色");
+        existing.Name = role.Name;
+        existing.Description = role.Description;
+        existing.Permissions = role.Permissions;
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        var role = await _db.Roles.FindAsync(id);
+        if (role != null)
+        {
+            // 檢查是否有使用者使用此角色
+            if (await _db.Users.AnyAsync(u => u.RoleId == id))
+                throw new InvalidOperationException("此角色尚有使用者使用，無法刪除");
+            
+            _db.Roles.Remove(role);
+            await _db.SaveChangesAsync();
+        }
+    }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Services\UserService.cs
+// 檔案名稱: UserService.cs
+// ============================================
+
+using bektApi.Data;
+using bektApi.DTOs;
+using bektApi.Models;
+using bektApi.Utils;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+
+namespace bektApi.Services;
+
+/// <summary>
+/// 使用者服務實作 - 處理使用者 CRUD 與密碼雜湊
+/// </summary>
+public class UserService : IUserService
+{
+    private readonly AppDbContext _db;
+    private const int PBKDF2_ITERATIONS = 10000;
+    private const int SALT_SIZE = 32;
+    private const int HASH_SIZE = 32;
+
+    public UserService(AppDbContext db) => _db = db;
+
+    public async Task<IEnumerable<UserDto>> GetAllAsync() =>
+        await _db.Users
+            .Include(u => u.Role)
+            .Select(u => new UserDto
+            {
+                Id = u.Id,
+                Username = u.Username,
+                DisplayName = u.DisplayName,
+                RoleId = u.RoleId,
+                RoleName = u.Role.Name,
+                IsActive = u.IsActive
+            })
+            .ToListAsync();
+
+    public async Task<UserDto?> GetByIdAsync(int id) =>
+        await _db.Users
+            .Include(u => u.Role)
+            .Where(u => u.Id == id)
+            .Select(u => new UserDto
+            {
+                Id = u.Id,
+                Username = u.Username,
+                DisplayName = u.DisplayName,
+                RoleId = u.RoleId,
+                RoleName = u.Role.Name,
+                IsActive = u.IsActive
+            })
+            .FirstOrDefaultAsync();
+
+    public async Task<UserDto> CreateAsync(User user, string password)
+    {
+        user.PasswordHash = PasswordHelper.HashPassword(password); // 使用新 PBKDF2
+        user.CreatedAt = DateTime.UtcNow;
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync();
+        return await GetByIdAsync(user.Id) ?? throw new Exception("使用者建立失敗");
+    }
+
+    public async Task UpdateAsync(int id, User user, string? password = null)
+    {
+        var existing = await _db.Users.FindAsync(id) ?? throw new KeyNotFoundException("找不到使用者");
+        existing.Username = user.Username;
+        existing.DisplayName = user.DisplayName;
+        existing.RoleId = user.RoleId;
+        existing.IsActive = user.IsActive;
+
+        if (!string.IsNullOrEmpty(password))
+            existing.PasswordHash = PasswordHelper.HashPassword(password); // 使用新 PBKDF2
+
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user != null)
+        {
+            _db.Users.Remove(user);
+            await _db.SaveChangesAsync();
+        }
+    }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Utils\PasswordHelper.cs
+// 檔案名稱: PasswordHelper.cs
+// ============================================
+
+using System.Security.Cryptography;
+using System.Text;
+
+namespace bektApi.Utils;
+
+public static class PasswordHelper
+{
+    private const int ITERATIONS = 10000;
+    private const int SALT_SIZE = 32;
+    private const int HASH_SIZE = 32;
+
+    public static string HashPassword(string password)
+    {
+        var salt = RandomNumberGenerator.GetBytes(SALT_SIZE);
+        using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, ITERATIONS, HashAlgorithmName.SHA256);
+        var hash = Convert.ToBase64String(pbkdf2.GetBytes(HASH_SIZE));
+        return $"PBKDF2|{ITERATIONS}|{Convert.ToBase64String(salt)}|{hash}";
+    }
+
+    public static bool VerifyPassword(string password, string storedHash)
+    {
+        if (IsLegacySha256(storedHash))
+        {
+            using var sha256 = SHA256.Create();
+            var computed = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
+            return computed == storedHash;
+        }
+
+        var parts = storedHash.Split('|');
+        if (parts.Length != 4 || parts[0] != "PBKDF2") return false;
+
+        var iterations = int.Parse(parts[1]);
+        var salt = Convert.FromBase64String(parts[2]);
+        var hash = parts[3];
+
+        using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, iterations, HashAlgorithmName.SHA256);
+        var test = Convert.ToBase64String(pbkdf2.GetBytes(HASH_SIZE));
+        return test == hash;
+    }
+
+    private static bool IsLegacySha256(string hash) =>
+        !hash.Contains('|') && hash.Length == 44;
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\.gitattributes
+// 檔案名稱: .gitattributes
+// ============================================
+
+###############################################################################
+# Set default behavior to automatically normalize line endings.
+###############################################################################
+* text=auto
+
+###############################################################################
+# Set default behavior for command prompt diff.
+#
+# This is need for earlier builds of msysgit that does not have it on by
+# default for csharp files.
+# Note: This is only used by command line
+###############################################################################
+#*.cs     diff=csharp
+
+###############################################################################
+# Set the merge driver for project and solution files
+#
+# Merging from the command prompt will add diff markers to the files if there
+# are conflicts (Merging from VS is not affected by the settings below, in VS
+# the diff markers are never inserted). Diff markers may cause the following 
+# file extensions to fail to load in VS. An alternative would be to treat
+# these files as binary and thus will always conflict and require user
+# intervention with every merge. To do so, just uncomment the entries below
+###############################################################################
+#*.sln       merge=binary
+#*.csproj    merge=binary
+#*.vbproj    merge=binary
+#*.vcxproj   merge=binary
+#*.vcproj    merge=binary
+#*.dbproj    merge=binary
+#*.fsproj    merge=binary
+#*.lsproj    merge=binary
+#*.wixproj   merge=binary
+#*.modelproj merge=binary
+#*.sqlproj   merge=binary
+#*.wwaproj   merge=binary
+
+###############################################################################
+# behavior for image files
+#
+# image files are treated as binary by default.
+###############################################################################
+#*.jpg   binary
+#*.png   binary
+#*.gif   binary
+
+###############################################################################
+# diff behavior for common document formats
+# 
+# Convert binary document formats to text before diffing them. This feature
+# is only available from the command line. Turn it on by uncommenting the 
+# entries below.
+###############################################################################
+#*.doc   diff=astextplain
+#*.DOC   diff=astextplain
+#*.docx  diff=astextplain
+#*.DOCX  diff=astextplain
+#*.dot   diff=astextplain
+#*.DOT   diff=astextplain
+#*.pdf   diff=astextplain
+#*.PDF   diff=astextplain
+#*.rtf   diff=astextplain
+#*.RTF   diff=astextplain
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\appsettings.Development.json
+// 檔案名稱: appsettings.Development.json
+// ============================================
+
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=data/bekt-dev.db"
+  }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\appsettings.json
+// 檔案名稱: appsettings.json
+// ============================================
+
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=bekt.db"
+  },
+  "Jwt": {
+    "Key": "your-super-secret-key-here-32-chars-minimum",
+    "Issuer": "bekt-api",
+    "Audience": "bekt-client"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\bekt.sln
+// 檔案名稱: bekt.sln
+// ============================================
+
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36603.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "bektApi", "bektApi.csproj", "{6B6F5749-D374-B443-56AE-1D5B586D531A}"
+EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "bektVue", "..\..\frontend\bektVue.esproj", "{61DBB66E-1556-C8EA-5396-7FA9AA7AACCD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6B6F5749-D374-B443-56AE-1D5B586D531A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B6F5749-D374-B443-56AE-1D5B586D531A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B6F5749-D374-B443-56AE-1D5B586D531A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B6F5749-D374-B443-56AE-1D5B586D531A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61DBB66E-1556-C8EA-5396-7FA9AA7AACCD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61DBB66E-1556-C8EA-5396-7FA9AA7AACCD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61DBB66E-1556-C8EA-5396-7FA9AA7AACCD}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{61DBB66E-1556-C8EA-5396-7FA9AA7AACCD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61DBB66E-1556-C8EA-5396-7FA9AA7AACCD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61DBB66E-1556-C8EA-5396-7FA9AA7AACCD}.Release|Any CPU.Deploy.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {76B7613B-4F09-442A-8A69-7E763BCDC5B7}
+	EndGlobalSection
+EndGlobal
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\bektApi.csproj
+// 檔案名稱: bektApi.csproj
+// ============================================
+
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>aspnet-bektApi-12345678-1234-1234-1234-123456789012</UserSecretsId>
+    <SpaRoot>..\..\frontend</SpaRoot>
+    <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
+    <SpaProxyServerUrl>https://localhost:5173</SpaProxyServerUrl>	
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.3.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.*" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
+  </ItemGroup>
+
+</Project>
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\bektApi.csproj.user
+// 檔案名稱: bektApi.csproj.user
+// ============================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ActiveDebugProfile>https</ActiveDebugProfile>
+  </PropertyGroup>
+</Project>
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\Program.cs
+// 檔案名稱: Program.cs
+// ============================================
+
+// backend/bektApi/Program.cs
+using bektApi.Data;
+using bektApi.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;   // **For 設定 Swagger 的 Securit
+using bektApi.Infrastructure; // ⭐ 1. 新增：引入 Filter 所在的命名空間 (請根據您的實際路徑調整)
+using Swashbuckle.AspNetCore.SwaggerGen; // ⭐ 1. 新增：SchemaFilter 所需的命名空間
+
+
+var builder = WebApplication.CreateBuilder(args);
+
+// 加入 CORS 服務
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(
+                "https://localhost:5173", // Vite 預設 HTTPS 端口
+                "http://localhost:5173",  // Vite 預設 HTTP 端口
+                "https://localhost:5001", // 舊的環境變數，以防萬一
+                "http://localhost:5000",  // 舊的環境變數，以防萬一
+                "http://localhost:8080"   // 如果您用 WebPack 或其他框架
+                )  // 改成分開傳入
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+// Add services
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+
+// JWT
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        };
+    });
+
+builder.Services.AddAuthorization();
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+
+// ** 加入 Swagger JWT 授權設定 (已修正: 移除第二個 AddSwaggerGen 並將 SchemaFilter 加入此處)
+builder.Services.AddSwaggerGen(options =>
+{
+    // ⭐ 修正點 1: 註冊您的自訂 Schema Filter，這樣才會生效
+    options.SchemaFilter<bektApi.Infrastructure.DisplayAttributeSchemaFilter>();
+
+    // 1. 定義名為 "Bearer" 的安全配置
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "請輸入 'Bearer ' [空格] + Token (例如: Bearer 12345abcdef)",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT"
+    });
+
+    // 2. 對所有有 Authorize 屬性的 API 啟用此安全要求
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
+
+// ❌ 修正點 2: 這裡的 builder.Services.AddSwaggerGen(); 已被移除，避免重複設定。
+
+var app = builder.Build();
+
+// 建立資料庫 + 種子資料
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+    SeedData.Initialize(db);
+}
+
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+// 啟用 CORS
+app.UseCors("AllowFrontend"); // CORS 要在 UseHttpsRedirection 之前
+
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\backend\bektApi\README.md
+// 檔案名稱: README.md
+// ============================================
+
+# bektApi
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\assets\main.css
+// 檔案名稱: main.css
+// ============================================
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 全域樣式 */
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\components\common\CrudPageLayout.vue
+// 檔案名稱: CrudPageLayout.vue
+// ============================================
+
+// src/components/common/CrudPageLayout.vue
+<template>
+  <div class="p-4">
+    <div class="flex justify-between items-center mb-4 border-b pb-2">
+      <h1 class="text-2xl font-bold">{{ title }}</h1>
+      <router-link v-if="addRouteName" :to="{ name: addRouteName }" 
+                   class="bg-indigo-600 text-white px-4 py-2 rounded-md shadow-md hover:bg-indigo-700 transition">
+        新增
+      </router-link>
+    </div>
+    <slot></slot>
+  </div>
+</template>
+
+<script setup>
+defineProps({
+  title: { type: String, required: true },
+  addRouteName: { type: String, default: null }
+});
+</script>
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\components\common\GenericCrudForm.vue
+// 檔案名稱: GenericCrudForm.vue
+// ============================================
+
+// src/components/common/GenericCrudForm.vue
+<template>
+  <form @submit.prevent="submitForm" class="space-y-6">
+    <div v-for="field in fields.filter(f => f.type !== 'hidden')" :key="field.key">
+      <label :for="field.key" class="block text-sm font-medium text-gray-700">
+	  	{{ field.displayName || field.label }}<span v-if="field.validation?.required" class="text-red-500">*</span> 
+	  </label>
+      
+      <input v-if="field.type === 'text' || field.type === 'number'"
+             :type="field.type"
+             :id="field.key"
+             v-model="formData[field.key]"
+             class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+      
+      <textarea v-else-if="field.type === 'textarea'"
+             :id="field.key"
+             v-model="formData[field.key]"
+             rows="3"
+             class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"></textarea>
+
+      </div>
+
+    <div class="pt-5">
+      <div class="flex justify-end">
+        <button type="button" @click="$emit('cancel')"
+                class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+          取消
+        </button>
+        <button type="submit"
+                class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+          儲存
+        </button>
+      </div>
+    </div>
+  </form>
+</template>
+
+<script setup>
+import { reactive, watch } from 'vue'; 
+
+const props = defineProps({
+  fields: { type: Array, required: true }, // Schema 定義
+  initialData: { type: Object, required: true },
+});
+
+const emit = defineEmits(['submit', 'cancel']);
+
+// 使用 reactive 來創建可響應的表單資料
+const formData = reactive({});
+
+// 初始化 formData
+const initializeFormData = () => {
+  // 將 initialData 的屬性複製到 formData
+  // 這樣即使 initialData 改變 (例如從列表切換到編輯)，formData 也會更新
+  // 同時處理新增時 initialData 可能是空物件的情況
+  props.fields.forEach(field => {
+    formData[field.key] = props.initialData[field.key] ?? null;
+  });
+};
+
+// 初次載入時初始化
+initializeFormData();
+
+// 監聽 initialData 變化，以重新初始化表單 (例如從新增頁面切換到編輯頁面)
+watch(() => props.initialData, initializeFormData, { deep: true });
+
+
+const submitForm = () => {
+  // 移除所有為 null 或 undefined 的值，確保只傳送有設定的值
+  const dataToSend = Object.entries(formData)
+    .filter(([, value]) => value !== null && value !== undefined)
+    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+
+  emit('submit', dataToSend);
+};
+</script>
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\components\common\GenericDataTable.vue
+// 檔案名稱: GenericDataTable.vue
+// ============================================
+
+// src/components/common/GenericDataTable.vue
+<template>
+  <div class="bg-white shadow overflow-x-auto rounded-lg">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th v-for="col in columns" :key="col.key" scope="col" 
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            {{ col.displayName || col.label }}
+          </th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <tr v-for="item in data" :key="item.id">
+          <td v-for="col in columns" :key="col.key" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <slot :name="`cell-${col.key}`" :item="item">
+              {{ item[col.key] }}
+            </slot>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div v-if="!data.length" class="p-4 text-center text-gray-500">
+        無資料
+        <button @click="$emit('refresh')" class="ml-2 text-blue-500 hover:text-blue-700">刷新</button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+const props = defineProps({
+  columns: { type: Array, required: true }, // 欄位定義
+  data: { type: Array, required: true },
+  title: { type: String, default: '資料列表' }
+});
+
+const emit = defineEmits(['refresh']);
+</script>
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\generator\templates.js
+// 檔案名稱: templates.js
+// ============================================
+
+// src/generator/templates.js
+
+// ----------------------------------------------------
+// 輔助函式 1: 安全轉義函式
+// ----------------------------------------------------
+const escapeJsString = (str) => {
+    if (typeof str !== 'string') {
+        if (str === 0 || str === false) return str;
+        return '';
+    }
+    return str
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r')
+        .replace(/\t/g, '\\t');
+};
+
+// ----------------------------------------------------
+// 輔助函式 2: 根據 Key 創建預設的 Label
+// ----------------------------------------------------
+function toLabel(str) {
+  const label = str.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+  return escapeJsString(label);
+}
+
+// ----------------------------------------------------
+// 輔助函式 3: 設置 Form 初始值的預設值
+// ----------------------------------------------------
+function defaultValue(type) {
+  return type === 'number' ? '0' : "''";
+}
+
+// ----------------------------------------------------
+// 版型類型定義
+// ----------------------------------------------------
+export const TEMPLATE_TYPES = {
+  SIMPLE_LIST: 'simple-list',           // 簡單列表
+  CARD_GRID: 'card-grid',              // 卡片網格
+  MASTER_DETAIL: 'master-detail'       // 主從表單 (原版型)
+};
+
+// ----------------------------------------------------
+// 核心 TEMPLATES 邏輯
+// ----------------------------------------------------
+export const TEMPLATES = {
+  // ⭐ Schema 保持不變
+  schema: (e) => {
+    const tableColumns = Object.entries(e.properties)
+      .filter(([k]) => !['createdAt', 'updatedAt'].includes(k))
+      .map(([k, p]) => {
+        return `{ key: '${k}', label: '${toLabel(k)}', displayName: '${escapeJsString(p.displayName)}', isSortable: true }`;
+      })
+      .join(',\n  ');
+
+    const formFields = Object.entries(e.properties)
+      .filter(([k]) => k !== 'id' && !['createdAt', 'updatedAt'].includes(k))
+      .map(([k, p]) => {
+        const type = p.type === 'number' ? 'number' : p.type === 'date' ? 'date' : 'text';
+        return `{ key: '${k}', label: '${toLabel(k)}', displayName: '${escapeJsString(p.displayName)}', type: '${type}', validation: { required: ${p.required} } }`;
+      })
+      .join(',\n  ');
+
+    const initialForm = Object.keys(e.properties)
+      .filter(k => k !== 'id')
+      .map(k => `${k}: ${defaultValue(e.properties[k].type)},`)
+      .join('\n  ');
+
+    return `// src/schema/${e.lowerName}Schema.js
+export const ${e.lowerName}TableColumns = [
+  ${tableColumns}
+];
+
+export const ${e.lowerName}FormFields = [
+  { key: 'id', type: 'hidden' },
+  ${formFields}
+];
+
+export const initial${e.name}Form = {
+  ${initialForm}
+};
+`;
+  },
+
+  // ⭐ Service 保持不變
+  service: (e) => `// src/services/${e.lowerName}Service.js
+import apiClient from '@/services/apiClient';
+const RESOURCE_URL = '${e.apiPath.replace('/api', '')}';
+export const ${e.lowerName}Service = {
+  getAll: (params = {}) => apiClient.get(RESOURCE_URL, { params }),
+  getById: (id) => apiClient.get(\`\${RESOURCE_URL}/\${id}\`),
+  create: (data) => apiClient.post(RESOURCE_URL, data),
+  update: (id, data) => apiClient.put(\`\${RESOURCE_URL}/\${id}\`, data),
+  remove: (id) => apiClient.delete(\`\${RESOURCE_URL}/\${id}\`),
+};
+`,
+
+  // ⭐ Store 保持不變
+  store: (e) => `// src/stores/${e.lowerName}Store.js
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import { ${e.lowerName}Service } from '@/services/${e.lowerName}Service';
+import { initial${e.name}Form } from '@/schema/${e.lowerName}Schema';
+
+export const use${e.name}Store = defineStore('${e.lowerName}', () => {
+  const items = ref([]);
+  const current = ref({ ...initial${e.name}Form });
+  const loading = ref(false);
+
+  const fetchAll = async () => {
+    loading.value = true;
+    try {
+      const res = await ${e.lowerName}Service.getAll();
+      items.value = res.data;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchOne = async (id) => {
+    const res = await ${e.lowerName}Service.getById(id);
+    current.value = res.data;
+  };
+
+  const save = async (data) => {
+    if (data.id) {
+      await ${e.lowerName}Service.update(data.id, data);
+    } else {
+      await ${e.lowerName}Service.create(data);
+    }
+  };
+
+  const remove = async (id) => {
+    await ${e.lowerName}Service.remove(id);
+  };
+
+  const reset = () => current.value = { ...initial${e.name}Form };
+
+  return { items, current, loading, fetchAll, fetchOne, save, remove, reset };
+});
+`,
+
+  // ============================================================
+  // 🆕 版型 1: 簡單列表 (Simple List)
+  // ============================================================
+  simpleListVue: (e) => `<template>
+  <CrudPageLayout title="${e.name} 管理" add-route-name="${e.name}Create">
+    <GenericDataTable
+      :data="store.items"
+      :columns="${e.lowerName}TableColumns"
+      :loading="store.loading"
+      @refresh="store.fetchAll"
+    >
+      <template #cell-actions="{ item }">
+        <button @click="$router.push({ name: '${e.name}Edit', params: { id: item.id } })" class="text-blue-600 hover:underline">編輯</button>
+        <button @click="del(item.id)" class="text-red-600 hover:underline ml-2">刪除</button>
+      </template>
+    </GenericDataTable>
+  </CrudPageLayout>
+</template>
+
+<script setup>
+import { onMounted } from 'vue';
+import { use${e.name}Store } from '@/stores/${e.lowerName}Store';
+import { ${e.lowerName}TableColumns } from '@/schema/${e.lowerName}Schema';
+import { ${e.lowerName}Service } from '@/services/${e.lowerName}Service';
+import CrudPageLayout from '@/components/common/CrudPageLayout.vue';
+import GenericDataTable from '@/components/common/GenericDataTable.vue';
+
+const store = use${e.name}Store();
+onMounted(() => store.fetchAll());
+
+const del = async (id) => {
+  if (confirm('確定刪除？')) {
+    await ${e.lowerName}Service.remove(id);
+    store.fetchAll();
+  }
+};
+</script>
+`,
+
+  // ============================================================
+  // 🆕 版型 2: 卡片網格 (Card Grid)
+  // ============================================================
+  cardGridVue: (e) => {
+    // 生成欄位的動態顯示邏輯
+    const displayFields = Object.entries(e.properties)
+      .filter(([k]) => !['id', 'createdAt', 'updatedAt'].includes(k))
+      .slice(0, 3) // 只取前3個欄位顯示在卡片上
+      .map(([k, p]) => `<div class="text-sm text-gray-600"><span class="font-medium">${escapeJsString(p.displayName)}:</span> {{ item.${k} }}</div>`)
+      .join('\n              ');
+
+    return `<template>
+  <div class="max-w-7xl mx-auto p-6">
+    <!-- 標題列 -->
+    <header class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800">${e.name} 管理</h1>
+          <p class="text-gray-600 mt-1">共 {{ store.items.length }} 筆資料</p>
+        </div>
+        <button @click="$router.push({ name: '${e.name}Create' })"
+          class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium flex items-center gap-2 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          新增
+        </button>
+      </div>
+    </header>
+
+    <!-- 搜尋列 -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <input v-model="searchTerm" @input="handleSearch"
+        placeholder="搜尋資料..."
+        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
+    </div>
+
+    <!-- 卡片網格 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-for="item in filteredItems" :key="item.id"
+        class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all cursor-pointer"
+        @click="$router.push({ name: '${e.name}Edit', params: { id: item.id } })">
+        
+        <div class="h-48 bg-gradient-to-br from-blue-400 to-purple-500"></div>
+        
+        <div class="p-5">
+          <h3 class="text-lg font-bold text-gray-800 mb-3">{{ item.name || item.title || 'N/A' }}</h3>
+          
+          <div class="space-y-2 mb-4">
+            ${displayFields}
+          </div>
+          
+          <div class="flex gap-2 pt-4 border-t">
+            <button @click.stop="$router.push({ name: '${e.name}Edit', params: { id: item.id } })"
+              class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all">
+              編輯
+            </button>
+            <button @click.stop="handleDelete(item.id)"
+              class="flex-1 px-4 py-2 border-2 border-red-500 text-red-600 hover:bg-red-50 rounded-lg transition-all">
+              刪除
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { use${e.name}Store } from '@/stores/${e.lowerName}Store';
+import { ${e.lowerName}Service } from '@/services/${e.lowerName}Service';
+
+const router = useRouter();
+const store = use${e.name}Store();
+const searchTerm = ref('');
+
+const filteredItems = computed(() => {
+  if (!searchTerm.value) return store.items;
+  const term = searchTerm.value.toLowerCase();
+  return store.items.filter(item =>
+    Object.values(item).some(val =>
+      String(val).toLowerCase().includes(term)
+    )
+  );
+});
+
+const handleSearch = () => {
+  // 搜尋邏輯已在 computed 中處理
+};
+
+const handleDelete = async (id) => {
+  if (confirm('確定刪除？')) {
+    await ${e.lowerName}Service.remove(id);
+    store.fetchAll();
+  }
+};
+
+onMounted(() => store.fetchAll());
+</script>
+`;
+  },
+
+  // ============================================================
+  // 🔄 原版型: 主從表單列表 (保留原邏輯)
+  // ============================================================
+  listVue: (e) => `<template>
+  <CrudPageLayout title="${e.name} 管理" add-route-name="${e.name}Create">
+    <GenericDataTable
+      :data="store.items"
+      :columns="${e.lowerName}TableColumns"
+      :loading="store.loading"
+      @refresh="store.fetchAll"
+    >
+      <template #cell-actions="{ item }">
+        <button @click="$router.push({ name: '${e.name}Edit', params: { id: item.id } })" class="text-blue-600 hover:underline">編輯</button>
+        <button @click="del(item.id)" class="text-red-600 hover:underline ml-2">刪除</button>
+      </template>
+    </GenericDataTable>
+  </CrudPageLayout>
+</template>
+
+<script setup>
+import { onMounted } from 'vue';
+import { use${e.name}Store } from '@/stores/${e.lowerName}Store';
+import { ${e.lowerName}TableColumns } from '@/schema/${e.lowerName}Schema';
+import { ${e.lowerName}Service } from '@/services/${e.lowerName}Service';
+import CrudPageLayout from '@/components/common/CrudPageLayout.vue';
+import GenericDataTable from '@/components/common/GenericDataTable.vue';
+
+const store = use${e.name}Store();
+onMounted(() => store.fetchAll());
+
+const del = async (id) => {
+  if (confirm('確定刪除？')) {
+    await ${e.lowerName}Service.remove(id);
+    store.fetchAll();
+  }
+};
+</script>
+`,
+
+  // ⭐ Form 保持不變
+  formVue: (e) => `<template>
+  <CrudPageLayout :title="\`\${isEdit ? '編輯' : '新增'} ${e.name}\`">
+    <div class="max-w-2xl mx-auto">
+      <GenericCrudForm
+        :fields="${e.lowerName}FormFields"
+        :initial-data="store.current"
+        @submit="save"
+        @cancel="$router.push({ name: '${e.name}List' })"
+      />
+    </div>
+  </CrudPageLayout>
+</template>
+
+<script setup>
+import { computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { use${e.name}Store } from '@/stores/${e.lowerName}Store';
+import { ${e.lowerName}FormFields } from '@/schema/${e.lowerName}Schema';
+import GenericCrudForm from '@/components/common/GenericCrudForm.vue';
+import CrudPageLayout from '@/components/common/CrudPageLayout.vue';
+
+const store = use${e.name}Store();
+const route = useRoute();
+const router = useRouter();
+
+const isEdit = computed(() => !!route.params.id);
+
+watch(
+  () => route.params.id,
+  async (id) => {
+    if (id) {
+      await store.fetchOne(id);
+    } else {
+      store.reset();
+    }
+  },
+  { immediate: true }
+);
+
+const save = async (data) => {
+  await store.save(data);
+  router.push({ name: '${e.name}List' });
+};
+</script>
+`,
+
+  // ⭐ Routes 保持不變
+  routes: (e) => `// src/router/${e.lowerName}Routes.js
+export const ${e.lowerName}Routes = [
+  { path: '${e.lowerName}s', name: '${e.name}List', component: () => import('@/views/${e.lowerName}/${e.name}List.vue') },
+  { path: '${e.lowerName}s/create', name: '${e.name}Create', component: () => import('@/views/${e.lowerName}/${e.name}Form.vue') },
+  { path: '${e.lowerName}s/:id/edit', name: '${e.name}Edit', component: () => import('@/views/${e.lowerName}/${e.name}Form.vue') },
+];
+`,
+};
+
+// ============================================================
+// 🆕 根據版型類型選擇對應的 Vue 檔案生成函數
+// ============================================================
+export function getListTemplate(templateType) {
+  switch (templateType) {
+    case TEMPLATE_TYPES.SIMPLE_LIST:
+      return TEMPLATES.simpleListVue;
+    case TEMPLATE_TYPES.CARD_GRID:
+      return TEMPLATES.cardGridVue;
+    case TEMPLATE_TYPES.MASTER_DETAIL:
+    default:
+      return TEMPLATES.listVue;
+  }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\layouts\MainLayout.vue
+// 檔案名稱: MainLayout.vue
+// ============================================
+
+// src/layouts/MainLayout.vue
+<template>
+  <div class="min-h-screen bg-gray-50 flex flex-col">
+    <header class="bg-indigo-600 shadow-md">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+        <router-link :to="{ name: 'GeneratorSetup' }" class="text-xl font-bold text-white hover:text-indigo-200">
+          🛠️ Code Generator
+        </router-link>
+        <nav class="flex items-center">
+          <router-link :to="{ name: 'GeneratorSetup' }" 
+                       class="text-white mx-3 hover:text-indigo-200 transition">
+            設定
+          </router-link>
+          <router-link :to="{ name: 'SystemPreview' }" 
+                       class="text-white mx-3 hover:text-indigo-200 transition">
+            預覽
+          </router-link>
+          
+          <button @click="handleLogout"
+                  class="bg-red-500 text-white px-3 py-1 rounded-md text-sm hover:bg-red-600 transition ml-4">
+            登出
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+      <slot>
+        <router-view />
+      </slot>
+    </main>
+    
+  </div>
+</template>
+
+<script setup>
+import { useAuthStore } from '@/stores/authStore'
+import { useRouter } from 'vue-router'
+
+const authStore = useAuthStore()
+const router = useRouter()
+
+const handleLogout = () => {
+    // 1. 呼叫 Store 內的登出函數，清除 JWT 和狀態
+    authStore.logout()
+    
+    // 2. 導航到登入頁面 (Login)，使用 replace 避免用戶按後退鍵回到受保護頁面
+    router.replace({ name: 'Login' })
+}
+</script>
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\router\index.js
+// 檔案名稱: index.js
+// ============================================
+
+// src/router/index.js
+
+import { createRouter, createWebHistory } from 'vue-router';
+import MainLayout from '@/layouts/MainLayout.vue';
+import GeneratorSetup from '@/views/GeneratorSetup.vue';
+import SystemPreview from '@/views/SystemPreview.vue';
+import Login from '@/views/auth/Login.vue';
+
+// 動態載入所有 *Routes.js (大寫開頭)
+const modules = import.meta.glob('./[A-Z]*Routes.js', { eager: true });
+const generatedRoutes = Object.values(modules)
+  .flatMap(m => Object.values(m).filter(Array.isArray))
+  .flat();
+
+const defaultRouteName = generatedRoutes.find(r => r.name?.endsWith('List'))?.name || null;
+
+const routes = [
+  // **[核心修正 1]** 標記 Login 頁面為公共頁面 (isPublic: true)
+  { path: '/login', name: 'Login', component: Login, meta: { isPublic: true } }, 
+  {
+    path: '/',
+    component: MainLayout,
+    // **[修正 2]** 標記所有 MainLayout 的子路徑都需要驗證
+    meta: { requiresAuth: true }, 
+    children: [
+      { path: '', name: 'GeneratorSetup', component: GeneratorSetup },
+      {
+        path: 'preview',
+        // **[修正 3]** 移除父路由的 name (解決警告)，並移除重複的 requiresAuth (繼承自父層)
+        component: SystemPreview,
+        children: [
+          ...generatedRoutes,
+          // **[修正 4]** 將 SystemPreview 名稱賦予給處理空路徑的子路由 (解決 No match 錯誤)
+          ...(defaultRouteName 
+             ? [{ path: '', name: 'SystemPreview', redirect: { name: defaultRouteName } }]
+             : [{ path: '', name: 'SystemPreview', component: SystemPreview }]
+          )
+        ]
+      }
+    ]
+  }
+];
+
+const router = createRouter({ history: createWebHistory(), routes });
+
+
+// ✅ 登入守衛 (核心修正邏輯：解決無限重定向)
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = localStorage.getItem('jwt_token');
+
+  // 檢查路由記錄 (matched records) 中是否有任何一項標註為 requiresAuth (來自父層 / 或 /preview)
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  // 檢查路由記錄中是否有任何一項標註為 isPublic (來自 /login)
+  const isPublic = to.matched.some(record => record.meta.isPublic);
+
+  // 1. 處理未登入狀態 (進入無限迴圈的根源)
+  if (!isAuthenticated && requiresAuth && !isPublic) {
+    // 條件：未登入 AND 訪問受保護路徑 AND 訪問的路徑不是公共頁面 (/login)
+    // **這個邏輯確保當導航目標是 /login 時，!isPublic 為 false，條件不成立，從而終止迴圈**
+    return next({ name: 'Login' });
+  }
+
+  // 2. 處理已登入狀態
+  if (isAuthenticated && isPublic) {
+    // 已登入，但嘗試訪問 Login 頁面，導向主頁
+    return next({ name: 'GeneratorSetup' }); 
+  }
+
+  // 3. 允許所有其他導航 (已登入訪問受保護頁面，或未登入訪問公共頁面)
+  next();
+});
+
+
+export default router;
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\router\ProductRoutes.js
+// 檔案名稱: ProductRoutes.js
+// ============================================
+
+// src/router/productRoutes.js
+export const productRoutes = [
+  { path: 'products', name: 'ProductList', component: () => import('@/views/product/ProductList.vue') },
+  { path: 'products/create', name: 'ProductCreate', component: () => import('@/views/product/ProductForm.vue') },
+  { path: 'products/:id/edit', name: 'ProductEdit', component: () => import('@/views/product/ProductForm.vue') },
+];
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\router\RoleRoutes.js
+// 檔案名稱: RoleRoutes.js
+// ============================================
+
+// src/router/roleRoutes.js
+export const roleRoutes = [
+  { path: 'roles', name: 'RoleList', component: () => import('@/views/role/RoleList.vue') },
+  { path: 'roles/create', name: 'RoleCreate', component: () => import('@/views/role/RoleForm.vue') },
+  { path: 'roles/:id/edit', name: 'RoleEdit', component: () => import('@/views/role/RoleForm.vue') },
+];
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\router\UserRoutes.js
+// 檔案名稱: UserRoutes.js
+// ============================================
+
+// src/router/userRoutes.js
+export const userRoutes = [
+  { path: 'users', name: 'UserList', component: () => import('@/views/user/UserList.vue') },
+  { path: 'users/create', name: 'UserCreate', component: () => import('@/views/user/UserForm.vue') },
+  { path: 'users/:id/edit', name: 'UserEdit', component: () => import('@/views/user/UserForm.vue') },
+];
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\schema\productSchema.js
+// 檔案名稱: productSchema.js
+// ============================================
+
+// src/schema/productSchema.js
+export const productTableColumns = [
+  { key: 'id', label: 'Id', displayName: 'id', isSortable: true },
+  { key: 'name', label: 'Name', displayName: '產品名稱', isSortable: true },
+  { key: 'description', label: 'Description', displayName: '產品內容', isSortable: true },
+  { key: 'quantity', label: 'Quantity', displayName: '庫存數量', isSortable: true }
+];
+
+export const productFormFields = [
+  { key: 'id', type: 'hidden' },
+  { key: 'name', label: 'Name', displayName: '產品名稱', type: 'text', validation: { required: false } },
+  { key: 'description', label: 'Description', displayName: '產品內容', type: 'text', validation: { required: false } },
+  { key: 'quantity', label: 'Quantity', displayName: '庫存數量', type: 'number', validation: { required: false } }
+];
+
+export const initialProductForm = {
+  name: '',
+  description: '',
+  quantity: 0,
+  createdAt: '',
+  updatedAt: '',
+};
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\schema\roleSchema.js
+// 檔案名稱: roleSchema.js
+// ============================================
+
+// src/schema/roleSchema.js
+export const roleTableColumns = [
+  { key: 'id', label: 'Id', displayName: 'id', isSortable: true },
+  { key: 'name', label: 'Name', displayName: '角色名稱', isSortable: true },
+  { key: 'description', label: 'Description', displayName: '角色內容', isSortable: true },
+  { key: 'permissions', label: 'Permissions', displayName: '權控', isSortable: true },
+  { key: 'userCount', label: 'User Count', displayName: '使用者數量', isSortable: true }
+];
+
+export const roleFormFields = [
+  { key: 'id', type: 'hidden' },
+  { key: 'name', label: 'Name', displayName: '角色名稱', type: 'text', validation: { required: false } },
+  { key: 'description', label: 'Description', displayName: '角色內容', type: 'text', validation: { required: false } },
+  { key: 'permissions', label: 'Permissions', displayName: '權控', type: 'text', validation: { required: false } },
+  { key: 'userCount', label: 'User Count', displayName: '使用者數量', type: 'number', validation: { required: false } }
+];
+
+export const initialRoleForm = {
+  name: '',
+  description: '',
+  permissions: '',
+  userCount: 0,
+};
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\schema\userSchema.js
+// 檔案名稱: userSchema.js
+// ============================================
+
+// src/schema/userSchema.js
+export const userTableColumns = [
+  { key: 'id', label: 'Id', displayName: 'id', isSortable: true },
+  { key: 'username', label: 'Username', displayName: '帳號', isSortable: true },
+  { key: 'displayName', label: 'Display Name', displayName: '使用者名稱', isSortable: true },
+  { key: 'roleId', label: 'Role Id', displayName: '角色', isSortable: true },
+  { key: 'roleName', label: 'Role Name', displayName: '角色名稱', isSortable: true },
+  { key: 'isActive', label: 'Is Active', displayName: '生效', isSortable: true }
+];
+
+export const userFormFields = [
+  { key: 'id', type: 'hidden' },
+  { key: 'username', label: 'Username', displayName: '帳號', type: 'text', validation: { required: false } },
+  { key: 'displayName', label: 'Display Name', displayName: '使用者名稱', type: 'text', validation: { required: false } },
+  { key: 'roleId', label: 'Role Id', displayName: '角色', type: 'number', validation: { required: false } },
+  { key: 'roleName', label: 'Role Name', displayName: '角色名稱', type: 'text', validation: { required: false } },
+  { key: 'isActive', label: 'Is Active', displayName: '生效', type: 'text', validation: { required: false } }
+];
+
+export const initialUserForm = {
+  username: '',
+  displayName: '',
+  roleId: 0,
+  roleName: '',
+  isActive: '',
+};
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\services\apiClient.js
+// 檔案名稱: apiClient.js
+// ============================================
+
+// src/services/apiClient.js
+
+import axios from 'axios';
+
+// **[修正 1]**：將 baseURL 的計算移到 axios.create 呼叫的外部
+const baseURL = import.meta.env.VITE_API_URL + '/api/';
+
+const apiClient = axios.create({
+    // **[修正 2]**：使用正確的鍵值對語法來設定 baseURL
+    baseURL: baseURL, 
+    withCredentials: true 
+});
+
+// 攔截器邏輯保持不變，用於夾帶 JWT Token
+apiClient.interceptors.request.use(config => {
+    const token = localStorage.getItem('jwt_token'); 
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`; 
+    }
+    return config;
+});
+ 
+export default apiClient;
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\services\AuthService.js
+// 檔案名稱: AuthService.js
+// ============================================
+
+// src/services/AuthService.js
+
+// 確保引入了配置好的 axios 實例
+import axios from '@/axios'; 
+
+const API_URL = '/Auth/';
+
+class AuthService {
+    /**
+     * 嘗試登入，成功則儲存 Token 並設定 axios 標頭
+     * @param {string} username
+     * @param {string} password
+     * @returns {Promise<any>}
+     */
+    async login(username, password) {
+        try {
+            // 假設後端登入 API 位於 /api/Auth/login
+            const response = await axios.post(API_URL + 'login', { username, password });
+            
+            // **修改重點：儲存 Token 並設定預設標頭**
+            if (response.data.token) {
+                // 將 JWT Token 存入 localStorage
+                localStorage.setItem('userToken', response.data.token);
+                
+                // 設定 axios 實例的預設授權標頭
+                this.setAuthHeader(response.data.token); 
+            }
+
+            return response.data; // 回傳包含 Token 的 JwtResponse
+        } catch (error) {
+            console.error('Login failed:', error);
+            // 拋出錯誤讓上層處理
+            throw error; 
+        }
+    }
+
+    /**
+     * 清除本地 Token 並移除 axios 預設標頭
+     */
+    logout() {
+        localStorage.removeItem('userToken');
+        // 清除 axios 實例上的預設標頭
+        this.removeAuthHeader(); 
+    }
+
+    /**
+     * 取得本地儲存的 Token
+     * @returns {string | null}
+     */
+    getCurrentToken() {
+        return localStorage.getItem('userToken');
+    }
+
+    /**
+     * 設定 axios 實例的預設授權標頭
+     * @param {string} token
+     */
+    setAuthHeader(token) {
+        // 設定所有 axios 請求的預設授權標頭
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
+
+    /**
+     * 移除 axios 實例的預設授權標頭
+     */
+    removeAuthHeader() {
+        delete axios.defaults.headers.common['Authorization'];
+    }
+}
+
+// **新增邏輯：應用程式啟動時檢查 Token**
+// 確保在應用程式重載後，如果 localStorage 裡有 Token，仍能自動設定標頭
+const authService = new AuthService();
+const initialToken = authService.getCurrentToken();
+if (initialToken) {
+    authService.setAuthHeader(initialToken);
+}
+
+export default authService;
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\services\productService.js
+// 檔案名稱: productService.js
+// ============================================
+
+// src/services/productService.js
+import apiClient from '@/services/apiClient';
+const RESOURCE_URL = '/Products';
+export const productService = {
+  getAll: (params = {}) => apiClient.get(RESOURCE_URL, { params }),
+  getById: (id) => apiClient.get(`${RESOURCE_URL}/${id}`),
+  create: (data) => apiClient.post(RESOURCE_URL, data),
+  update: (id, data) => apiClient.put(`${RESOURCE_URL}/${id}`, data),
+  remove: (id) => apiClient.delete(`${RESOURCE_URL}/${id}`),
+};
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\services\roleService.js
+// 檔案名稱: roleService.js
+// ============================================
+
+// src/services/roleService.js
+import apiClient from '@/services/apiClient';
+const RESOURCE_URL = '/Roles';
+export const roleService = {
+  getAll: (params = {}) => apiClient.get(RESOURCE_URL, { params }),
+  getById: (id) => apiClient.get(`${RESOURCE_URL}/${id}`),
+  create: (data) => apiClient.post(RESOURCE_URL, data),
+  update: (id, data) => apiClient.put(`${RESOURCE_URL}/${id}`, data),
+  remove: (id) => apiClient.delete(`${RESOURCE_URL}/${id}`),
+};
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\services\userService.js
+// 檔案名稱: userService.js
+// ============================================
+
+// src/services/userService.js
+import apiClient from '@/services/apiClient';
+const RESOURCE_URL = '/Users';
+export const userService = {
+  getAll: (params = {}) => apiClient.get(RESOURCE_URL, { params }),
+  getById: (id) => apiClient.get(`${RESOURCE_URL}/${id}`),
+  create: (data) => apiClient.post(RESOURCE_URL, data),
+  update: (id, data) => apiClient.put(`${RESOURCE_URL}/${id}`, data),
+  remove: (id) => apiClient.delete(`${RESOURCE_URL}/${id}`),
+};
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\stores\authStore.ts
+// 檔案名稱: authStore.ts
+// ============================================
+
+// src/stores/authStore.ts
+
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+// ===============================================
+// **[修正 1]**：移除舊的、不正確的匯入 (apiService)，並加入正確的 apiClient 匯入
+import apiClient from '@/services/apiClient' 
+// ===============================================
+
+import type { User } from '@/types'
+// **[修正 2]**：RESOURCE_URL 不再需要，因為 apiClient.post 中會定義路徑
+// const RESOURCE_URL = '/api/Auth/login'; 
+
+const MOCK_USER: User = {
+  id: 1,
+  username: 'test',
+  displayName: '系統管理員',
+  roleId: 1,
+  roleName: 'Admin',
+  isActive: true
+}
+
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref<User | null>(null)
+  const isAuthenticated = ref(false)
+  const error = ref<string | null>(null)
+
+  const init = () => {
+    const storedUser = localStorage.getItem('user')
+    // =============================================
+    // **[修改重點 1]** 從 'jwt_token' 讀取
+    // =============================================
+    const authToken = localStorage.getItem('jwt_token') 
+
+    if (storedUser && authToken) {
+      user.value = JSON.parse(storedUser)
+      isAuthenticated.value = true
+    }
+  }
+
+    const login = async (username: string, password: string): Promise<boolean> => {
+        error.value = null;
+        console.log('--- 1. 準備發送登入請求 ---'); 
+        try {
+            console.log('--- 2. 進入 Try 區塊 ---'); 
+
+            // **[修正 3]**：移除冗餘的 apiClient 檢查，因為它現在已經被匯入了
+            // if (!apiClient) {
+            //     console.error("apiClient 實例未正確初始化！");
+            //     error.value = '系統初始化錯誤：API 連線服務遺失。';
+            //     return false;
+            // }
+
+            // 確保您的 .env.development 已經修正為 http://localhost:5000
+            // 且 apiClient.js 中 baseURL 為 http://localhost:5000/api/
+            
+            const response = await apiClient.post('Auth/login', { username, password });
+            
+            console.log('--- 3. 成功收到 API 回應 ---'); 
+            
+            // 處理登入成功邏輯：
+            if (response.data.token) {
+                const token = response.data.token;
+                const userPayload = response.data.user; 
+
+                localStorage.setItem('jwt_token', token);
+                localStorage.setItem('user', JSON.stringify(userPayload));
+                
+                user.value = userPayload
+                isAuthenticated.value = true
+                return true
+            }
+
+            error.value = '登入失敗：後端未返回 Token';
+            return false;
+            
+        } catch (err) {
+            // **[關鍵]** 顯示錯誤的詳細訊息，而不是通用的訊息
+            console.error('Login 請求失敗！原始錯誤物件:', err); 
+
+            if (err.response) {
+                // 處理 4xx, 5xx 錯誤
+                const status = err.response.status;
+                
+                if (status === 401) {
+                    error.value = err.response.data.detail || err.response.data.title || '帳號或密碼錯誤 (401)';
+                } else if (status === 500) {
+                    error.value = `伺服器錯誤 (500)：請檢查後端日誌。`;
+                } else {
+                    error.value = `登入失敗：錯誤碼 ${status}。`;
+                }
+            } else if (err.request) {
+                // 請求發出但未收到響應 (網路或連線問題)
+                error.value = '連線失敗：請檢查後端服務是否啟動或連線設置。';
+            } else {
+                // 程式內部同步錯誤
+                error.value = `程式內部錯誤：登入請求未發出。詳情請見 Console。`;
+            }
+            
+            return false;
+        }
+    }
+
+  const logout = () => {
+    // ... (登出邏輯保持不變)
+    localStorage.removeItem('jwt_token') 
+    localStorage.removeItem('user')
+    user.value = null
+    isAuthenticated.value = false
+  }
+
+  return { user, isAuthenticated, error, init, login, logout }
+})
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\stores\productStore.js
+// 檔案名稱: productStore.js
+// ============================================
+
+// src/stores/productStore.js
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import { productService } from '@/services/productService';
+import { initialProductForm } from '@/schema/productSchema';
+
+export const useProductStore = defineStore('product', () => {
+  const items = ref([]);
+  const current = ref({ ...initialProductForm });
+  const loading = ref(false);
+
+  const fetchAll = async () => {
+    loading.value = true;
+    try {
+      const res = await productService.getAll();
+      items.value = res.data;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchOne = async (id) => {
+    const res = await productService.getById(id);
+    current.value = res.data;
+  };
+
+  const save = async (data) => {
+    if (data.id) {
+      await productService.update(data.id, data);
+    } else {
+      await productService.create(data);
+    }
+  };
+
+  const remove = async (id) => {
+    await productService.remove(id);
+  };
+
+  const reset = () => current.value = { ...initialProductForm };
+
+  return { items, current, loading, fetchAll, fetchOne, save, remove, reset };
+});
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\stores\roleStore.js
+// 檔案名稱: roleStore.js
+// ============================================
+
+// src/stores/roleStore.js
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import { roleService } from '@/services/roleService';
+import { initialRoleForm } from '@/schema/roleSchema';
+
+export const useRoleStore = defineStore('role', () => {
+  const items = ref([]);
+  const current = ref({ ...initialRoleForm });
+  const loading = ref(false);
+
+  const fetchAll = async () => {
+    loading.value = true;
+    try {
+      const res = await roleService.getAll();
+      items.value = res.data;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchOne = async (id) => {
+    const res = await roleService.getById(id);
+    current.value = res.data;
+  };
+
+  const save = async (data) => {
+    if (data.id) {
+      await roleService.update(data.id, data);
+    } else {
+      await roleService.create(data);
+    }
+  };
+
+  const remove = async (id) => {
+    await roleService.remove(id);
+  };
+
+  const reset = () => current.value = { ...initialRoleForm };
+
+  return { items, current, loading, fetchAll, fetchOne, save, remove, reset };
+});
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\stores\userStore.js
+// 檔案名稱: userStore.js
+// ============================================
+
+// src/stores/userStore.js
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import { userService } from '@/services/userService';
+import { initialUserForm } from '@/schema/userSchema';
+
+export const useUserStore = defineStore('user', () => {
+  const items = ref([]);
+  const current = ref({ ...initialUserForm });
+  const loading = ref(false);
+
+  const fetchAll = async () => {
+    loading.value = true;
+    try {
+      const res = await userService.getAll();
+      items.value = res.data;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchOne = async (id) => {
+    const res = await userService.getById(id);
+    current.value = res.data;
+  };
+
+  const save = async (data) => {
+    if (data.id) {
+      await userService.update(data.id, data);
+    } else {
+      await userService.create(data);
+    }
+  };
+
+  const remove = async (id) => {
+    await userService.remove(id);
+  };
+
+  const reset = () => current.value = { ...initialUserForm };
+
+  return { items, current, loading, fetchAll, fetchOne, save, remove, reset };
+});
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\utils\swaggerParser.js
+// 檔案名稱: swaggerParser.js
+// ============================================
+
+// src/utils/swaggerParser.js
+export function parseSwagger(swaggerJson) {
+  const entities = [];
+  const paths = swaggerJson.paths || {};
+
+  for (const [path, methods] of Object.entries(paths)) {
+    if (!path.startsWith('/api/')) continue;
+
+    const segments = path.split('/').filter(Boolean);
+    if (segments.length < 2) continue;
+
+    const controller = segments[1];
+    const entityName = controller.replace(/s$/i, '');
+    const lowerName = entityName.toLowerCase();
+
+    const hasGetAll = !!methods.get && !path.includes('{');
+    const hasGetById = !!methods.get && path.includes('{id}');
+    const hasPost = !!methods.post && !path.includes('{');
+    const hasPut = !!methods.put && path.includes('{id}');
+    const hasDelete = !!methods.delete && path.includes('{id}');
+
+    if (!hasGetAll) continue;
+
+    let properties = {};
+    const getResponse = methods.get?.responses?.['200'];
+    const schema = getResponse?.schema || getResponse?.content?.['application/json']?.schema;
+    if (schema) {
+      properties = extractProperties(schema, swaggerJson);
+    }
+
+    entities.push({
+      name: entityName,
+      controller,
+      lowerName,
+      apiPath: `/api/${controller}`,
+      properties,
+      hasGetAll,
+      hasGetById,
+      hasPost,
+      hasPut,
+      hasDelete,
+    });
+  }
+
+  return entities;
+}
+
+function extractProperties(schema, swaggerJson) {
+  const ref = schema.$ref || schema.items?.$ref;
+  if (!ref) return {};
+
+  const defName = ref.split('/').pop();
+  const definitions = swaggerJson.definitions || swaggerJson.components?.schemas || {};
+  const def = definitions[defName];
+  if (!def) return {};
+
+  const props = {};
+  for (const [key, prop] of Object.entries(def.properties || {})) {
+    // ⭐ 核心變動: 在這裡提取 x-display-name
+    const displayName = prop['x-display-name'] || key; 
+    
+    props[key] = {
+      // ⭐ 新增: 將中文名稱儲存在 displayName 屬性中
+      displayName: displayName, 
+      type: mapType(prop.type, prop.format),
+      required: def.required?.includes(key) || false,
+    };
+  }
+  return props;
+}
+
+function mapType(type, format) {
+  if (type === 'integer' || type === 'number') return 'number';
+  if (type === 'string') {
+    if (format === 'date-time') return 'date';
+    return 'string';
+  }
+  if (type === 'boolean') return 'boolean';
+  return 'string';
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\views\auth\Login.vue
+// 檔案名稱: Login.vue
+// ============================================
+
+// src/views/auth/Login.vue
+<template>
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div class="w-full max-w-md">
+      <div class="bg-white rounded-lg shadow-lg p-8">
+        <div class="text-center mb-8">
+          <h1 class="text-4xl font-bold text-grocy-cyan">🏠 Grocy</h1>
+          <p class="text-gray-600 mt-2">家用庫存管理系統</p>
+        </div>
+
+        <form @submit.prevent="handleLogin" class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">使用者名稱</label>
+            <input
+              v-model="form.username"
+              type="text"
+              required
+              class="input-field"
+              placeholder="輸入使用者名稱"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">密碼</label>
+            <input
+              v-model="form.password"
+              type="password"
+              required
+              class="input-field"
+              placeholder="輸入密碼"
+            />
+          </div>
+
+          <div v-if="error" class="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p class="text-sm text-red-700">{{ error }}</p>
+          </div>
+
+          <button
+            type="submit"
+            :disabled="loading"
+            class="w-full btn-primary py-3 text-lg"
+          >
+            {{ loading ? '登入中...' : '登入' }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</template>
+
+// src/views/auth/Login.vue
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+const form = ref({ username: '', password: '' })
+const loading = ref(false)
+const error = ref('')
+
+// **[核心修正區塊：handleLogin 函數]**
+const handleLogin = async () => {
+  loading.value = true
+  error.value = ''
+  authStore.error = null // 清除 store 中的錯誤訊息
+
+  try {
+    const success = await authStore.login(form.value.username, form.value.password)
+    
+    if (success) {
+      // **[核心修正]** 將導航目標修正為正確的路由名稱 'GeneratorSetup'
+      // 這是解決 Vue Router 警告的關鍵。
+      router.push({ name: 'GeneratorSetup' }) 
+    } else {
+      // 從 Store 取得錯誤訊息
+      error.value = authStore.error || '登入失敗，請檢查帳號密碼。'
+    }
+  } catch (err) {
+    // 理論上現在不會走到這裡，但保持健全性
+    console.error("Login 組件發生未預期錯誤:", err);
+    error.value = '連線錯誤，請檢查後端服務是否啟動。'
+  } finally {
+    loading.value = false
+  }
+}
+// **[核心修正區塊結束]**
+</script>
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\views\product\ProductForm.vue
+// 檔案名稱: ProductForm.vue
+// ============================================
+
+<template>
+  <CrudPageLayout :title="`${isEdit ? '編輯' : '新增'} Product`">
+    <div class="max-w-2xl mx-auto">
+      <GenericCrudForm
+        :fields="productFormFields"
+        :initial-data="store.current"
+        @submit="save"
+        @cancel="$router.push({ name: 'ProductList' })"
+      />
+    </div>
+  </CrudPageLayout>
+</template>
+
+<script setup>
+import { computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useProductStore } from '@/stores/productStore';
+import { productFormFields } from '@/schema/productSchema';
+import GenericCrudForm from '@/components/common/GenericCrudForm.vue';
+import CrudPageLayout from '@/components/common/CrudPageLayout.vue';
+
+const store = useProductStore();
+const route = useRoute();
+const router = useRouter();
+
+const isEdit = computed(() => !!route.params.id);
+
+watch(
+  () => route.params.id,
+  async (id) => {
+    if (id) {
+      await store.fetchOne(id);
+    } else {
+      store.reset();
+    }
+  },
+  { immediate: true }
+);
+
+const save = async (data) => {
+  await store.save(data);
+  router.push({ name: 'ProductList' });
+};
+</script>
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\views\product\ProductList.vue
+// 檔案名稱: ProductList.vue
+// ============================================
+
+<template>
+  <div class="max-w-7xl mx-auto p-6">
+    <!-- 標題列 -->
+    <header class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800">Product 管理</h1>
+          <p class="text-gray-600 mt-1">共 {{ store.items.length }} 筆資料</p>
+        </div>
+        <button @click="$router.push({ name: 'ProductCreate' })"
+          class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium flex items-center gap-2 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          新增
+        </button>
+      </div>
+    </header>
+
+    <!-- 搜尋列 -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <input v-model="searchTerm" @input="handleSearch"
+        placeholder="搜尋資料..."
+        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
+    </div>
+
+    <!-- 卡片網格 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-for="item in filteredItems" :key="item.id"
+        class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all cursor-pointer"
+        @click="$router.push({ name: 'ProductEdit', params: { id: item.id } })">
+        
+        <div class="h-48 bg-gradient-to-br from-blue-400 to-purple-500"></div>
+        
+        <div class="p-5">
+          <h3 class="text-lg font-bold text-gray-800 mb-3">{{ item.name || item.title || 'N/A' }}</h3>
+          
+          <div class="space-y-2 mb-4">
+            <div class="text-sm text-gray-600"><span class="font-medium">產品名稱:</span> {{ item.name }}</div>
+              <div class="text-sm text-gray-600"><span class="font-medium">產品內容:</span> {{ item.description }}</div>
+              <div class="text-sm text-gray-600"><span class="font-medium">庫存數量:</span> {{ item.quantity }}</div>
+          </div>
+          
+          <div class="flex gap-2 pt-4 border-t">
+            <button @click.stop="$router.push({ name: 'ProductEdit', params: { id: item.id } })"
+              class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all">
+              編輯
+            </button>
+            <button @click.stop="handleDelete(item.id)"
+              class="flex-1 px-4 py-2 border-2 border-red-500 text-red-600 hover:bg-red-50 rounded-lg transition-all">
+              刪除
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useProductStore } from '@/stores/productStore';
+import { productService } from '@/services/productService';
+
+const router = useRouter();
+const store = useProductStore();
+const searchTerm = ref('');
+
+const filteredItems = computed(() => {
+  if (!searchTerm.value) return store.items;
+  const term = searchTerm.value.toLowerCase();
+  return store.items.filter(item =>
+    Object.values(item).some(val =>
+      String(val).toLowerCase().includes(term)
+    )
+  );
+});
+
+const handleSearch = () => {
+  // 搜尋邏輯已在 computed 中處理
+};
+
+const handleDelete = async (id) => {
+  if (confirm('確定刪除？')) {
+    await productService.remove(id);
+    store.fetchAll();
+  }
+};
+
+onMounted(() => store.fetchAll());
+</script>
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\views\role\RoleForm.vue
+// 檔案名稱: RoleForm.vue
+// ============================================
+
+<template>
+  <CrudPageLayout :title="`${isEdit ? '編輯' : '新增'} Role`">
+    <div class="max-w-2xl mx-auto">
+      <GenericCrudForm
+        :fields="roleFormFields"
+        :initial-data="store.current"
+        @submit="save"
+        @cancel="$router.push({ name: 'RoleList' })"
+      />
+    </div>
+  </CrudPageLayout>
+</template>
+
+<script setup>
+import { computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useRoleStore } from '@/stores/roleStore';
+import { roleFormFields } from '@/schema/roleSchema';
+import GenericCrudForm from '@/components/common/GenericCrudForm.vue';
+import CrudPageLayout from '@/components/common/CrudPageLayout.vue';
+
+const store = useRoleStore();
+const route = useRoute();
+const router = useRouter();
+
+const isEdit = computed(() => !!route.params.id);
+
+watch(
+  () => route.params.id,
+  async (id) => {
+    if (id) {
+      await store.fetchOne(id);
+    } else {
+      store.reset();
+    }
+  },
+  { immediate: true }
+);
+
+const save = async (data) => {
+  await store.save(data);
+  router.push({ name: 'RoleList' });
+};
+</script>
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\views\role\RoleList.vue
+// 檔案名稱: RoleList.vue
+// ============================================
+
+<template>
+  <div class="max-w-7xl mx-auto p-6">
+    <!-- 標題列 -->
+    <header class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800">Role 管理</h1>
+          <p class="text-gray-600 mt-1">共 {{ store.items.length }} 筆資料</p>
+        </div>
+        <button @click="$router.push({ name: 'RoleCreate' })"
+          class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium flex items-center gap-2 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          新增
+        </button>
+      </div>
+    </header>
+
+    <!-- 搜尋列 -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <input v-model="searchTerm" @input="handleSearch"
+        placeholder="搜尋資料..."
+        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
+    </div>
+
+    <!-- 卡片網格 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-for="item in filteredItems" :key="item.id"
+        class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all cursor-pointer"
+        @click="$router.push({ name: 'RoleEdit', params: { id: item.id } })">
+        
+        <div class="h-48 bg-gradient-to-br from-blue-400 to-purple-500"></div>
+        
+        <div class="p-5">
+          <h3 class="text-lg font-bold text-gray-800 mb-3">{{ item.name || item.title || 'N/A' }}</h3>
+          
+          <div class="space-y-2 mb-4">
+            <div class="text-sm text-gray-600"><span class="font-medium">角色名稱:</span> {{ item.name }}</div>
+              <div class="text-sm text-gray-600"><span class="font-medium">角色內容:</span> {{ item.description }}</div>
+              <div class="text-sm text-gray-600"><span class="font-medium">權控:</span> {{ item.permissions }}</div>
+          </div>
+          
+          <div class="flex gap-2 pt-4 border-t">
+            <button @click.stop="$router.push({ name: 'RoleEdit', params: { id: item.id } })"
+              class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all">
+              編輯
+            </button>
+            <button @click.stop="handleDelete(item.id)"
+              class="flex-1 px-4 py-2 border-2 border-red-500 text-red-600 hover:bg-red-50 rounded-lg transition-all">
+              刪除
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useRoleStore } from '@/stores/roleStore';
+import { roleService } from '@/services/roleService';
+
+const router = useRouter();
+const store = useRoleStore();
+const searchTerm = ref('');
+
+const filteredItems = computed(() => {
+  if (!searchTerm.value) return store.items;
+  const term = searchTerm.value.toLowerCase();
+  return store.items.filter(item =>
+    Object.values(item).some(val =>
+      String(val).toLowerCase().includes(term)
+    )
+  );
+});
+
+const handleSearch = () => {
+  // 搜尋邏輯已在 computed 中處理
+};
+
+const handleDelete = async (id) => {
+  if (confirm('確定刪除？')) {
+    await roleService.remove(id);
+    store.fetchAll();
+  }
+};
+
+onMounted(() => store.fetchAll());
+</script>
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\views\user\UserForm.vue
+// 檔案名稱: UserForm.vue
+// ============================================
+
+<template>
+  <CrudPageLayout :title="`${isEdit ? '編輯' : '新增'} User`">
+    <div class="max-w-2xl mx-auto">
+      <GenericCrudForm
+        :fields="userFormFields"
+        :initial-data="store.current"
+        @submit="save"
+        @cancel="$router.push({ name: 'UserList' })"
+      />
+    </div>
+  </CrudPageLayout>
+</template>
+
+<script setup>
+import { computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useUserStore } from '@/stores/userStore';
+import { userFormFields } from '@/schema/userSchema';
+import GenericCrudForm from '@/components/common/GenericCrudForm.vue';
+import CrudPageLayout from '@/components/common/CrudPageLayout.vue';
+
+const store = useUserStore();
+const route = useRoute();
+const router = useRouter();
+
+const isEdit = computed(() => !!route.params.id);
+
+watch(
+  () => route.params.id,
+  async (id) => {
+    if (id) {
+      await store.fetchOne(id);
+    } else {
+      store.reset();
+    }
+  },
+  { immediate: true }
+);
+
+const save = async (data) => {
+  await store.save(data);
+  router.push({ name: 'UserList' });
+};
+</script>
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\views\user\UserList.vue
+// 檔案名稱: UserList.vue
+// ============================================
+
+<template>
+  <div class="max-w-7xl mx-auto p-6">
+    <!-- 標題列 -->
+    <header class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800">User 管理</h1>
+          <p class="text-gray-600 mt-1">共 {{ store.items.length }} 筆資料</p>
+        </div>
+        <button @click="$router.push({ name: 'UserCreate' })"
+          class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium flex items-center gap-2 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          新增
+        </button>
+      </div>
+    </header>
+
+    <!-- 搜尋列 -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <input v-model="searchTerm" @input="handleSearch"
+        placeholder="搜尋資料..."
+        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
+    </div>
+
+    <!-- 卡片網格 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-for="item in filteredItems" :key="item.id"
+        class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all cursor-pointer"
+        @click="$router.push({ name: 'UserEdit', params: { id: item.id } })">
+        
+        <div class="h-48 bg-gradient-to-br from-blue-400 to-purple-500"></div>
+        
+        <div class="p-5">
+          <h3 class="text-lg font-bold text-gray-800 mb-3">{{ item.name || item.title || 'N/A' }}</h3>
+          
+          <div class="space-y-2 mb-4">
+            <div class="text-sm text-gray-600"><span class="font-medium">帳號:</span> {{ item.username }}</div>
+              <div class="text-sm text-gray-600"><span class="font-medium">使用者名稱:</span> {{ item.displayName }}</div>
+              <div class="text-sm text-gray-600"><span class="font-medium">角色:</span> {{ item.roleId }}</div>
+          </div>
+          
+          <div class="flex gap-2 pt-4 border-t">
+            <button @click.stop="$router.push({ name: 'UserEdit', params: { id: item.id } })"
+              class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all">
+              編輯
+            </button>
+            <button @click.stop="handleDelete(item.id)"
+              class="flex-1 px-4 py-2 border-2 border-red-500 text-red-600 hover:bg-red-50 rounded-lg transition-all">
+              刪除
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useUserStore } from '@/stores/userStore';
+import { userService } from '@/services/userService';
+
+const router = useRouter();
+const store = useUserStore();
+const searchTerm = ref('');
+
+const filteredItems = computed(() => {
+  if (!searchTerm.value) return store.items;
+  const term = searchTerm.value.toLowerCase();
+  return store.items.filter(item =>
+    Object.values(item).some(val =>
+      String(val).toLowerCase().includes(term)
+    )
+  );
+});
+
+const handleSearch = () => {
+  // 搜尋邏輯已在 computed 中處理
+};
+
+const handleDelete = async (id) => {
+  if (confirm('確定刪除？')) {
+    await userService.remove(id);
+    store.fetchAll();
+  }
+};
+
+onMounted(() => store.fetchAll());
+</script>
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\views\GeneratorSetup.vue
+// 檔案名稱: GeneratorSetup.vue
+// ============================================
+
+<template>
+  <div class="bg-white shadow-lg rounded-lg p-8 max-w-5xl mx-auto">
+    <h2 class="text-3xl font-extrabold text-gray-900 mb-6">程式碼生成設定</h2>
+
+    <form @submit.prevent="submitSetup" class="space-y-6">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Swagger API URL</label>
+        <input v-model="config.apiUrl" required type="url" class="mt-1 block w-full border rounded-md p-3" placeholder="http://localhost:5000/swagger/v1/swagger.json">
+      </div>
+
+      <div class="flex justify-end space-x-3">
+        <button type="button" @click="loadEntities" :disabled="loading" class="px-6 py-3 bg-indigo-100 text-indigo-700 rounded-md">
+          {{ loading ? '解析中...' : '解析 API' }}
+        </button>
+        <button type="submit" :disabled="!hasSelectedEntities" class="px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          生成並下載 ZIP
+        </button>
+      </div>
+    </form>
+
+    <!-- 🆕 版型選擇區 -->
+    <div v-if="entities.length" class="mt-8 bg-blue-50 rounded-lg p-6">
+      <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z"/>
+        </svg>
+        選擇版型類型
+      </h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div v-for="template in templateTypes" :key="template.value"
+          @click="selectedTemplate = template.value"
+          :class="[
+            'p-4 rounded-lg border-2 cursor-pointer transition-all',
+            selectedTemplate === template.value 
+              ? 'border-blue-600 bg-white shadow-md' 
+              : 'border-gray-200 bg-white hover:border-blue-400'
+          ]">
+          <div class="flex items-start gap-3">
+            <div :class="[
+              'w-12 h-12 rounded-lg flex items-center justify-center text-2xl',
+              selectedTemplate === template.value ? 'bg-blue-100' : 'bg-gray-100'
+            ]">
+              {{ template.icon }}
+            </div>
+            <div class="flex-1">
+              <h4 class="font-bold text-gray-800 mb-1">{{ template.label }}</h4>
+              <p class="text-sm text-gray-600">{{ template.description }}</p>
+              <div class="mt-2 flex items-center gap-1 text-xs text-gray-500">
+                <span>難度:</span>
+                <span v-for="i in template.difficulty" :key="i">⭐</span>
+              </div>
+            </div>
+            <div v-if="selectedTemplate === template.value" class="text-blue-600">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 實體清單 -->
+    <div v-if="entities.length" class="mt-8">
+      <h3 class="text-xl font-medium text-gray-900 mb-4">實體清單 (請選擇要生成的項目)</h3>
+      <div class="space-y-3">
+        <div v-for="entity in entities" :key="entity.name" class="flex items-center p-3 bg-gray-50 rounded-lg">
+          <input type="checkbox" v-model="entity.selected" class="form-checkbox h-5 w-5 text-indigo-600 rounded">
+          <span class="ml-3 text-gray-700 font-medium">{{ entity.name }} ({{ entity.lowerName }})</span>
+          <span class="ml-auto text-sm text-gray-500">{{ Object.keys(entity.properties).length }} 個屬性</span>
+        </div>
+      </div>
+      
+      <!-- 全選/全不選 -->
+      <div class="mt-4 flex gap-3">
+        <button type="button" @click="selectAll" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm">
+          全選
+        </button>
+        <button type="button" @click="deselectAll" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm">
+          全不選
+        </button>
+      </div>
+    </div>
+
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import JSZip from 'jszip'
+import { parseSwagger } from '@/utils/swaggerParser' 
+import { TEMPLATES, TEMPLATE_TYPES, getListTemplate } from '@/generator/templates'
+
+const config = ref({
+  apiUrl: 'http://localhost:5000/swagger/v1/swagger.json'
+})
+
+const entities = ref<any[]>([])
+const loading = ref(false)
+
+// 🆕 版型類型選擇
+const selectedTemplate = ref(TEMPLATE_TYPES.SIMPLE_LIST)
+
+const templateTypes = [
+  {
+    value: TEMPLATE_TYPES.SIMPLE_LIST,
+    label: '📋 簡單列表',
+    icon: '📋',
+    description: '傳統表格式CRUD,適合資料維護',
+    difficulty: 1
+  },
+  {
+    value: TEMPLATE_TYPES.CARD_GRID,
+    label: '🎴 卡片網格',
+    icon: '🎴',
+    description: '卡片式排版,適合商品展示',
+    difficulty: 2
+  },
+  {
+    value: TEMPLATE_TYPES.MASTER_DETAIL,
+    label: '📝 主從表單',
+    icon: '📝',
+    description: '訂單式主從結構 (原版型)',
+    difficulty: 3
+  }
+]
+
+const hasSelectedEntities = computed(() => 
+  entities.value.some(e => e.selected)
+)
+
+const loadEntities = async () => {
+  if (!config.value.apiUrl) return alert('請輸入 Swagger API URL')
+
+  loading.value = true
+  entities.value = []
+  
+  let swaggerPath = ''
+  try {
+    const url = new URL(config.value.apiUrl)
+    swaggerPath = url.pathname + url.search
+  } catch (e) {
+    alert('Swagger API URL 格式錯誤,無法解析路徑。')
+    loading.value = false
+    return
+  }
+
+  try {
+    const res = await fetch(swaggerPath)
+    
+    if (!res.ok) {
+      const errorText = await res.text()
+      throw new Error(`無法載入 Swagger：${res.status} ${res.statusText}. 詳細: ${errorText.substring(0, Math.min(errorText.length, 100))}...`)
+    }
+
+    const swagger = await res.json()
+    entities.value = parseSwagger(swagger).map((e: any) => ({ ...e, selected: true }))
+
+  } catch (err: any) {
+    alert('解析失敗：' + (err.message || '未知錯誤'))
+  } finally {
+    loading.value = false
+  }
+}
+
+const submitSetup = async () => {
+  const selected = entities.value.filter(e => e.selected)
+  if (!selected.length) return alert('請選擇至少一個實體')
+
+  const zip = new JSZip()
+  
+  // 🆕 根據選擇的版型生成對應的程式碼
+  const listTemplateFunc = getListTemplate(selectedTemplate.value)
+
+  selected.forEach(e => {
+    const schemaFolder = zip.folder('src/schema')
+    const serviceFolder = zip.folder('src/services')
+    const storeFolder = zip.folder('src/stores')
+    const viewsFolder = zip.folder('src/views').folder(e.lowerName)
+    const routerFolder = zip.folder('src/router')
+
+    schemaFolder.file(`${e.lowerName}Schema.js`, TEMPLATES.schema(e))
+    serviceFolder.file(`${e.lowerName}Service.js`, TEMPLATES.service(e))
+    storeFolder.file(`${e.lowerName}Store.js`, TEMPLATES.store(e))
+    
+    // 🆕 使用選擇的版型生成 List 頁面
+    viewsFolder.file(`${e.name}List.vue`, listTemplateFunc(e))
+    viewsFolder.file(`${e.name}Form.vue`, TEMPLATES.formVue(e))
+    
+    routerFolder.file(`${e.name}Routes.js`, TEMPLATES.routes(e))
+  })
+
+  // 🆕 新增版型資訊檔案
+  zip.file('README.md', `# 生成的程式碼
+
+## 版型類型
+${templateTypes.find(t => t.value === selectedTemplate.value)?.label}
+
+## 生成的實體
+${selected.map(e => `- ${e.name} (${e.lowerName})`).join('\n')}
+
+## 使用說明
+1. 將檔案解壓縮到專案對應目錄
+2. 確認所有相依套件已安裝
+3. 註冊路由到 router/index.js
+4. 開始使用!
+`)
+
+  // 🆕 新增 purge.bat 批次檔：刪除所有生成的檔案與資料夾
+  const purgeLines = [
+    '@echo off',
+    'chcp 65001 >nul',
+    'echo.',
+    'echo ========================================',
+    'echo   ⚠  即將刪除本次生成的所有程式碼',
+    'echo ========================================',
+    'echo.',
+    'echo 將刪除以下項目：',
+    'echo   - src/schema/*.js',
+    'echo   - src/services/*.js',
+    'echo   - src/stores/*.js',
+    'echo   - src/views/[entity]/ 資料夾',
+    'echo   - src/router/*Routes.js',
+    'echo.',
+    'set /p "confirm=是否繼續？(Y/N): "',
+    'if /i "%confirm%" neq "Y" if /i "%confirm%" neq "是" (',
+    '    echo.',
+    '    echo ❌ 操作已取消。',
+    '    pause',
+    '    exit /b',
+    ')',
+    'echo.',
+    'echo 正在清除...'
+  ]
+
+  // 刪除 schema, service, store
+  selected.forEach(e => {
+    purgeLines.push(`if exist "src\\schema\\${e.lowerName}Schema.js" del /q "src\\schema\\${e.lowerName}Schema.js"`)
+    purgeLines.push(`if exist "src\\services\\${e.lowerName}Service.js" del /q "src\\services\\${e.lowerName}Service.js"`)
+    purgeLines.push(`if exist "src\\stores\\${e.lowerName}Store.js" del /q "src\\stores\\${e.lowerName}Store.js"`)
+    purgeLines.push(`if exist "src\\views\\${e.lowerName}" rd /s /q "src\\views\\${e.lowerName}"`)
+    purgeLines.push(`if exist "src\\router\\${e.name}Routes.js" del /q "src\\router\\${e.name}Routes.js"`)
+  })
+
+  // 嘗試刪除可能空的父資料夾（可選）
+  purgeLines.push(
+    'echo.',
+    'echo 嘗試清理空資料夾...',
+    'if exist "src\\schema" (rmdir "src\\schema" 2>nul || echo   - schema 資料夾非空，保留)',
+    'if exist "src\\services" (rmdir "src\\services" 2>nul || echo   - services 資料夾非空，保留)',
+    'if exist "src\\stores" (rmdir "src\\stores" 2>nul || echo   - stores 資料夾非空，保留)',
+    'if exist "src\\views" (rmdir "src\\views" 2>nul || echo   - views 資料夾非空，保留)',
+    'if exist "src\\router" (rmdir "src\\router" 2>nul || echo   - router 資料夾非空，保留)',
+    '',
+    'echo.',
+    'echo ✅ 所有指定檔案已清除！',
+    'echo.',
+    'pause'
+  )
+  zip.file('purge.bat', purgeLines.join('\r\n'))
+  
+  const zipContent = await zip.generateAsync({ type: 'blob' })
+  const downloadLink = document.createElement('a')
+  downloadLink.href = URL.createObjectURL(zipContent)
+  downloadLink.download = `generated_${selectedTemplate.value}_${Date.now()}.zip`
+  downloadLink.click()
+  URL.revokeObjectURL(downloadLink.href)
+}
+
+const selectAll = () => {
+  entities.value.forEach(e => e.selected = true)
+}
+
+const deselectAll = () => {
+  entities.value.forEach(e => e.selected = false)
+}
+</script>
+
+<style scoped>
+.form-checkbox {
+  @apply rounded border-gray-300 text-indigo-600 focus:ring-indigo-500;
+}
+</style>
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\views\SystemPreview.vue
+// 檔案名稱: SystemPreview.vue
+// ============================================
+
+// src/views/SystemPreview.vue
+<template>
+  <div class="flex">
+    <aside class="w-64 bg-gray-800 text-white min-h-screen p-4 rounded-l-lg">
+      <h3 class="text-lg font-bold mb-4 border-b border-gray-700 pb-2">預覽選單</h3>
+      <nav class="space-y-2">
+        <router-link
+          v-for="menuItem in generatedMenuItems"
+          :key="menuItem.name"
+          :to="{ name: menuItem.name }"
+          class="block py-2 px-3 rounded-md hover:bg-indigo-600 transition"
+        >
+          {{ menuItem.icon }} {{ menuItem.label }}
+        </router-link>
+        <router-link :to="{ name: 'GeneratorSetup' }" class="block py-2 px-3 rounded-md bg-red-700 hover:bg-red-600 transition mt-4">
+          ↩️ 返回設定
+        </router-link>
+      </nav>
+    </aside>
+
+    <div class="flex-grow bg-white p-6 rounded-r-lg shadow-lg">
+      <h2 class="text-2xl font-bold mb-4 border-b pb-2">
+        預覽內容區
+      </h2>
+      <router-view />
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+
+// **[核心修正 2]**：新增邏輯來動態獲取和篩選路由
+
+const router = useRouter();
+
+// 計算屬性：篩選出所有已生成的 List 頁面路由
+const generatedMenuItems = computed(() => {
+  // 1. 取得所有已註冊的路由 (包含動態載入的 ProductRoutes, UserRoutes 等)
+  const allRoutes = router.getRoutes();
+  
+  // 2. 篩選出名稱以 'List' 結尾的路由 (例如: ProductList, UserList)
+  const previewRoutes = allRoutes.filter(route => 
+    // 檢查路由名稱是否存在且以 'List' 結尾
+    route.name && route.name.toString().endsWith('List')
+  );
+
+  // 3. 將路由轉換為選單所需的格式
+  return previewRoutes.map(route => {
+    // 獲取路由名稱，例如 'ProductList'
+    const routeName = route.name.toString();
+    // 從路由名稱中提取實體名稱 (e.g., 'ProductList' -> 'Product')
+    const entityName = routeName.replace('List', ''); 
+    
+    // 建立通用標籤和圖示
+    let label = entityName;
+    let icon = '📦';
+
+    // 您可以在這裡擴展一個映射表，以提供更友好的中文標籤
+    const labelMap = {
+        'Product': '產品管理',
+        'User': '用戶管理',
+        'Role': '角色管理',
+    };
+
+    if (labelMap[entityName]) {
+        label = labelMap[entityName];
+    }
+
+    return {
+      name: routeName, // 例如 ProductList
+      label: label,
+      icon: icon
+    };
+  }).sort((a, b) => a.label.localeCompare(b.label)); // 依名稱排序
+});
+</script>
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\App.vue
+// 檔案名稱: App.vue
+// ============================================
+
+<template>
+  <router-view />
+</template>
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\axios.js
+// 檔案名稱: axios.js
+// ============================================
+
+// src/axios.js
+
+import axios from 'axios';
+
+const instance = axios.create({
+    // **[關鍵修正]** 必須確保 baseURL 與後端啟動的根路徑完全一致
+    // 預設後端為 https://localhost:5001，且 API 位於 /api/
+    baseURL: 'https://localhost:5001/api/', 
+    
+    // 為了安全起見，通常在本地開發時，將 withCredentials 設為 true
+    withCredentials: true 
+});
+
+// 攔截器 (Interceptor) 邏輯保持不變 (用於夾帶 JWT Token)
+instance.interceptors.request.use(config => {
+    const token = localStorage.getItem('jwt_token'); 
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`; 
+    }
+    return config;
+});
+ 
+export default instance;
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\src\main.js
+// 檔案名稱: main.js
+// ============================================
+
+import { createApp } from 'vue';
+import App from './App.vue';
+import router from './router';
+import { createPinia } from 'pinia';
+import './assets/main.css';
+
+const app = createApp(App);
+app.use(createPinia());
+app.use(router);
+app.mount('#app');
+
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\.env
+// 檔案名稱: .env
+// ============================================
+
+VITE_API_URL=https://localhost:5001
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\.env.development
+// 檔案名稱: .env.development
+// ============================================
+
+VITE_API_URL=https://localhost:5001
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\bektVue.esproj
+// 檔案名稱: bektVue.esproj
+// ============================================
+
+<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.2752196">
+  <PropertyGroup>
+    <StartupCommand>npm run dev</StartupCommand>
+    <JavaScriptTestRoot>.\</JavaScriptTestRoot>
+    <JavaScriptTestFramework>Vitest</JavaScriptTestFramework>
+    <!-- Allows the build (or compile) script located on package.json to run on Build -->
+    <ShouldRunBuildScript>false</ShouldRunBuildScript>
+    <!-- Folder where production build objects will be placed -->
+    <BuildOutputFolder>$(MSBuildProjectDirectory)\dist</BuildOutputFolder>
+  </PropertyGroup>
+</Project>
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\index.html
+// 檔案名稱: index.html
+// ============================================
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue3 CRUD Generator</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\package.json
+// 檔案名稱: package.json
+// ============================================
+
+{
+  "name": "bektVue",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.0",
+    "vue-router": "^4.2.5",
+    "jszip": "^3.10.1",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.33",
+    "autoprefixer": "^10.4.17"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.5.2",
+    "vite": "^5.0.10"
+  }
+}
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\postcss.config.js
+// 檔案名稱: postcss.config.js
+// ============================================
+
+export default {
+  plugins: { tailwindcss: {}, autoprefixer: {} },
+};
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\purge.bat
+// 檔案名稱: purge.bat
+// ============================================
+
+@echo off
+chcp 65001 >nul
+echo.
+echo ========================================
+echo   ⚠  即將刪除本次生成的所有程式碼
+echo ========================================
+echo.
+echo 將刪除以下項目：
+echo   - src/schema/*.js
+echo   - src/services/*.js
+echo   - src/stores/*.js
+echo   - src/views/[entity]/ 資料夾
+echo   - src/router/*Routes.js
+echo.
+set /p "confirm=是否繼續？(Y/N): "
+if /i "%confirm%" neq "Y" if /i "%confirm%" neq "是" (
+    echo.
+    echo ❌ 操作已取消。
+    pause
+    exit /b
+)
+echo.
+echo 正在清除...
+if exist "src\schema\productSchema.js" del /q "src\schema\productSchema.js"
+if exist "src\services\productService.js" del /q "src\services\productService.js"
+if exist "src\stores\productStore.js" del /q "src\stores\productStore.js"
+if exist "src\views\product" rd /s /q "src\views\product"
+if exist "src\router\ProductRoutes.js" del /q "src\router\ProductRoutes.js"
+if exist "src\schema\roleSchema.js" del /q "src\schema\roleSchema.js"
+if exist "src\services\roleService.js" del /q "src\services\roleService.js"
+if exist "src\stores\roleStore.js" del /q "src\stores\roleStore.js"
+if exist "src\views\role" rd /s /q "src\views\role"
+if exist "src\router\RoleRoutes.js" del /q "src\router\RoleRoutes.js"
+if exist "src\schema\userSchema.js" del /q "src\schema\userSchema.js"
+if exist "src\services\userService.js" del /q "src\services\userService.js"
+if exist "src\stores\userStore.js" del /q "src\stores\userStore.js"
+if exist "src\views\user" rd /s /q "src\views\user"
+if exist "src\router\UserRoutes.js" del /q "src\router\UserRoutes.js"
+echo.
+echo 嘗試清理空資料夾...
+if exist "src\schema" (rmdir "src\schema" 2>nul || echo   - schema 資料夾非空，保留)
+if exist "src\services" (rmdir "src\services" 2>nul || echo   - services 資料夾非空，保留)
+if exist "src\stores" (rmdir "src\stores" 2>nul || echo   - stores 資料夾非空，保留)
+if exist "src\views" (rmdir "src\views" 2>nul || echo   - views 資料夾非空，保留)
+if exist "src\router" (rmdir "src\router" 2>nul || echo   - router 資料夾非空，保留)
+
+echo.
+echo ✅ 所有指定檔案已清除！
+echo.
+pause
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\tailwind.config.js
+// 檔案名稱: tailwind.config.js
+// ============================================
+
+export default {
+  content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
+  theme: { extend: {} },
+  plugins: [],
+};
+
+
+// ============================================
+// 檔案路徑: D:\Try\251117-1138\frontend\vite.config.js
+// 檔案名稱: vite.config.js
+// ============================================
+
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  plugins: [vue()],
+  resolve: { alias: { '@': '/src' } },
+  server: {
+    host: 'localhost',
+    port: 5173,
+    proxy: {
+      '/api': { target: 'http://localhost:5000', changeOrigin: true },
+      '/swagger': { target: 'http://localhost:5000', changeOrigin: true }
+    }
+  }
+})
+
+

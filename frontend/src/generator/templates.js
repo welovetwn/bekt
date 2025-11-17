@@ -1,7 +1,7 @@
 // src/generator/templates.js
 
 // ----------------------------------------------------
-// 輔助函式 1: 安全轉義函式
+// 輔助函式
 // ----------------------------------------------------
 const escapeJsString = (str) => {
     if (typeof str !== 'string') {
@@ -17,17 +17,11 @@ const escapeJsString = (str) => {
         .replace(/\t/g, '\\t');
 };
 
-// ----------------------------------------------------
-// 輔助函式 2: 根據 Key 創建預設的 Label
-// ----------------------------------------------------
 function toLabel(str) {
   const label = str.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
   return escapeJsString(label);
 }
 
-// ----------------------------------------------------
-// 輔助函式 3: 設置 Form 初始值的預設值
-// ----------------------------------------------------
 function defaultValue(type) {
   return type === 'number' ? '0' : "''";
 }
@@ -36,16 +30,17 @@ function defaultValue(type) {
 // 版型類型定義
 // ----------------------------------------------------
 export const TEMPLATE_TYPES = {
-  SIMPLE_LIST: 'simple-list',           // 簡單列表
-  CARD_GRID: 'card-grid',              // 卡片網格
-  MASTER_DETAIL: 'master-detail'       // 主從表單 (原版型)
+  SIMPLE_LIST: 'simple-list',       // 簡單列表
+  CARD_GRID: 'card-grid',          // 卡片網格
+  MASTER_DETAIL: 'master-detail',  // ⭐ 主從表單 (真正的訂單結構)
+  KANBAN: 'kanban',                // 🆕 看板
+  TIMELINE: 'timeline'             // 🆕 時間軸
 };
 
 // ----------------------------------------------------
-// 核心 TEMPLATES 邏輯
+// Schema, Service, Store 保持不變
 // ----------------------------------------------------
 export const TEMPLATES = {
-  // ⭐ Schema 保持不變
   schema: (e) => {
     const tableColumns = Object.entries(e.properties)
       .filter(([k]) => !['createdAt', 'updatedAt'].includes(k))
@@ -83,7 +78,6 @@ export const initial${e.name}Form = {
 `;
   },
 
-  // ⭐ Service 保持不變
   service: (e) => `// src/services/${e.lowerName}Service.js
 import apiClient from '@/services/apiClient';
 const RESOURCE_URL = '${e.apiPath.replace('/api', '')}';
@@ -96,7 +90,6 @@ export const ${e.lowerName}Service = {
 };
 `,
 
-  // ⭐ Store 保持不變
   store: (e) => `// src/stores/${e.lowerName}Store.js
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
@@ -142,7 +135,7 @@ export const use${e.name}Store = defineStore('${e.lowerName}', () => {
 `,
 
   // ============================================================
-  // 🆕 版型 1: 簡單列表 (Simple List)
+  // 版型 1: 簡單列表 (傳統表格)
   // ============================================================
   simpleListVue: (e) => `<template>
   <CrudPageLayout title="${e.name} 管理" add-route-name="${e.name}Create">
@@ -153,8 +146,10 @@ export const use${e.name}Store = defineStore('${e.lowerName}', () => {
       @refresh="store.fetchAll"
     >
       <template #cell-actions="{ item }">
-        <button @click="$router.push({ name: '${e.name}Edit', params: { id: item.id } })" class="text-blue-600 hover:underline">編輯</button>
-        <button @click="del(item.id)" class="text-red-600 hover:underline ml-2">刪除</button>
+        <button @click="$router.push({ name: '${e.name}Edit', params: { id: item.id } })" 
+          class="text-blue-600 hover:underline">編輯</button>
+        <button @click="del(item.id)" 
+          class="text-red-600 hover:underline ml-2">刪除</button>
       </template>
     </GenericDataTable>
   </CrudPageLayout>
@@ -181,19 +176,17 @@ const del = async (id) => {
 `,
 
   // ============================================================
-  // 🆕 版型 2: 卡片網格 (Card Grid)
+  // 版型 2: 卡片網格 (保持不變)
   // ============================================================
   cardGridVue: (e) => {
-    // 生成欄位的動態顯示邏輯
     const displayFields = Object.entries(e.properties)
       .filter(([k]) => !['id', 'createdAt', 'updatedAt'].includes(k))
-      .slice(0, 3) // 只取前3個欄位顯示在卡片上
+      .slice(0, 3)
       .map(([k, p]) => `<div class="text-sm text-gray-600"><span class="font-medium">${escapeJsString(p.displayName)}:</span> {{ item.${k} }}</div>`)
       .join('\n              ');
 
     return `<template>
   <div class="max-w-7xl mx-auto p-6">
-    <!-- 標題列 -->
     <header class="bg-white rounded-xl shadow-sm p-6 mb-6">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -210,14 +203,12 @@ const del = async (id) => {
       </div>
     </header>
 
-    <!-- 搜尋列 -->
     <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
       <input v-model="searchTerm" @input="handleSearch"
         placeholder="搜尋資料..."
         class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
     </div>
 
-    <!-- 卡片網格 -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div v-for="item in filteredItems" :key="item.id"
         class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all cursor-pointer"
@@ -268,9 +259,7 @@ const filteredItems = computed(() => {
   );
 });
 
-const handleSearch = () => {
-  // 搜尋邏輯已在 computed 中處理
-};
+const handleSearch = () => {};
 
 const handleDelete = async (id) => {
   if (confirm('確定刪除？')) {
@@ -285,45 +274,316 @@ onMounted(() => store.fetchAll());
   },
 
   // ============================================================
-  // 🔄 原版型: 主從表單列表 (保留原邏輯)
+  // 🆕 版型 3: 主從表單 (真正的訂單結構)
   // ============================================================
-  listVue: (e) => `<template>
-  <CrudPageLayout title="${e.name} 管理" add-route-name="${e.name}Create">
-    <GenericDataTable
-      :data="store.items"
-      :columns="${e.lowerName}TableColumns"
-      :loading="store.loading"
-      @refresh="store.fetchAll"
-    >
-      <template #cell-actions="{ item }">
-        <button @click="$router.push({ name: '${e.name}Edit', params: { id: item.id } })" class="text-blue-600 hover:underline">編輯</button>
-        <button @click="del(item.id)" class="text-red-600 hover:underline ml-2">刪除</button>
-      </template>
-    </GenericDataTable>
-  </CrudPageLayout>
+  masterDetailVue: (e) => {
+    const mainFields = Object.entries(e.properties)
+      .filter(([k]) => !['id', 'createdAt', 'updatedAt'].includes(k))
+      .slice(0, 2)
+      .map(([k, p]) => `<div><span class="font-medium">${escapeJsString(p.displayName)}:</span> {{ selected.${k} }}</div>`)
+      .join('\n            ');
+
+    return `<template>
+  <div class="flex h-screen bg-gray-100">
+    <!-- 左側列表 (Master) -->
+    <div class="w-1/3 bg-white border-r overflow-y-auto">
+      <div class="p-4 border-b sticky top-0 bg-white z-10">
+        <h2 class="text-xl font-bold mb-3">${e.name} 列表</h2>
+        <button @click="$router.push({ name: '${e.name}Create' })"
+          class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+          ➕ 新增 ${e.name}
+        </button>
+      </div>
+      
+      <div class="divide-y">
+        <div v-for="item in store.items" :key="item.id"
+          @click="selectItem(item)"
+          :class="[
+            'p-4 cursor-pointer hover:bg-blue-50 transition',
+            selected?.id === item.id ? 'bg-blue-100 border-l-4 border-blue-600' : ''
+          ]">
+          <div class="font-semibold">{{ item.name || item.title || '#' + item.id }}</div>
+          <div class="text-sm text-gray-600 mt-1">{{ formatDate(item.createdAt) }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右側詳情 (Detail) -->
+    <div class="flex-1 overflow-y-auto p-6">
+      <div v-if="selected" class="bg-white rounded-lg shadow-lg p-6">
+        <div class="flex justify-between items-start mb-6">
+          <div>
+            <h3 class="text-2xl font-bold">{{ selected.name || selected.title || '詳細資料' }}</h3>
+            <p class="text-gray-500 text-sm mt-1">ID: {{ selected.id }}</p>
+          </div>
+          <div class="flex gap-2">
+            <button @click="editItem"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              ✏️ 編輯
+            </button>
+            <button @click="deleteItem"
+              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+              🗑️ 刪除
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          ${mainFields}
+        </div>
+
+        <!-- 🆕 可擴展: 明細表格區 (適合訂單明細) -->
+        <div class="mt-6 border-t pt-6">
+          <h4 class="text-lg font-bold mb-3">相關明細</h4>
+          <div class="text-gray-500 text-sm">
+            此處可擴展顯示子項目列表 (例如: 訂單明細、任務子項等)
+          </div>
+        </div>
+      </div>
+      
+      <div v-else class="flex items-center justify-center h-full text-gray-400">
+        <div class="text-center">
+          <svg class="w-24 h-24 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+          <p>請從左側選擇一個項目</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { use${e.name}Store } from '@/stores/${e.lowerName}Store';
-import { ${e.lowerName}TableColumns } from '@/schema/${e.lowerName}Schema';
 import { ${e.lowerName}Service } from '@/services/${e.lowerName}Service';
-import CrudPageLayout from '@/components/common/CrudPageLayout.vue';
-import GenericDataTable from '@/components/common/GenericDataTable.vue';
+
+const router = useRouter();
+const store = use${e.name}Store();
+const selected = ref(null);
+
+const selectItem = (item) => {
+  selected.value = item;
+};
+
+const editItem = () => {
+  router.push({ name: '${e.name}Edit', params: { id: selected.value.id } });
+};
+
+const deleteItem = async () => {
+  if (confirm('確定刪除？')) {
+    await ${e.lowerName}Service.remove(selected.value.id);
+    selected.value = null;
+    store.fetchAll();
+  }
+};
+
+const formatDate = (dateStr) => {
+  return dateStr ? new Date(dateStr).toLocaleDateString('zh-TW') : 'N/A';
+};
+
+onMounted(() => store.fetchAll());
+</script>
+`;
+  },
+
+  // ============================================================
+  // 🆕 版型 4: 看板 (Kanban)
+  // ============================================================
+  kanbanVue: (e) => {
+    return `<template>
+  <div class="p-6 bg-gray-100 min-h-screen">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold">${e.name} 看板</h1>
+      <button @click="$router.push({ name: '${e.name}Create' })"
+        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+        ➕ 新增
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- 待處理 -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold">📋 待處理</h2>
+          <span class="text-sm text-gray-500">{{ pendingItems.length }}</span>
+        </div>
+        <div class="space-y-3">
+          <div v-for="item in pendingItems" :key="item.id"
+            @click="$router.push({ name: '${e.name}Edit', params: { id: item.id } })"
+            class="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-lg cursor-pointer hover:shadow-md transition">
+            <h3 class="font-semibold">{{ item.name || item.title || '#' + item.id }}</h3>
+            <p class="text-sm text-gray-600 mt-1">{{ formatDate(item.createdAt) }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 進行中 -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold">🚀 進行中</h2>
+          <span class="text-sm text-gray-500">{{ inProgressItems.length }}</span>
+        </div>
+        <div class="space-y-3">
+          <div v-for="item in inProgressItems" :key="item.id"
+            @click="$router.push({ name: '${e.name}Edit', params: { id: item.id } })"
+            class="p-4 bg-blue-50 border-l-4 border-blue-400 rounded-lg cursor-pointer hover:shadow-md transition">
+            <h3 class="font-semibold">{{ item.name || item.title || '#' + item.id }}</h3>
+            <p class="text-sm text-gray-600 mt-1">{{ formatDate(item.createdAt) }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 已完成 -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold">✅ 已完成</h2>
+          <span class="text-sm text-gray-500">{{ completedItems.length }}</span>
+        </div>
+        <div class="space-y-3">
+          <div v-for="item in completedItems" :key="item.id"
+            @click="$router.push({ name: '${e.name}Edit', params: { id: item.id } })"
+            class="p-4 bg-green-50 border-l-4 border-green-400 rounded-lg cursor-pointer hover:shadow-md transition">
+            <h3 class="font-semibold">{{ item.name || item.title || '#' + item.id }}</h3>
+            <p class="text-sm text-gray-600 mt-1">{{ formatDate(item.createdAt) }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, onMounted } from 'vue';
+import { use${e.name}Store } from '@/stores/${e.lowerName}Store';
 
 const store = use${e.name}Store();
-onMounted(() => store.fetchAll());
 
-const del = async (id) => {
+// 🎯 根據狀態欄位分組 (假設有 status 欄位，可自行調整)
+const pendingItems = computed(() => 
+  store.items.filter(item => !item.status || item.status === 'pending')
+);
+const inProgressItems = computed(() => 
+  store.items.filter(item => item.status === 'in_progress')
+);
+const completedItems = computed(() => 
+  store.items.filter(item => item.status === 'completed')
+);
+
+const formatDate = (dateStr) => {
+  return dateStr ? new Date(dateStr).toLocaleDateString('zh-TW') : 'N/A';
+};
+
+onMounted(() => store.fetchAll());
+</script>
+`;
+  },
+
+  // ============================================================
+  // 🆕 版型 5: 時間軸 (Timeline)
+  // ============================================================
+  timelineVue: (e) => {
+    const displayFields = Object.entries(e.properties)
+      .filter(([k]) => !['id', 'createdAt', 'updatedAt'].includes(k))
+      .slice(0, 2)
+      .map(([k, p]) => `<div class="text-sm"><span class="font-medium">${escapeJsString(p.displayName)}:</span> {{ item.${k} }}</div>`)
+      .join('\n              ');
+
+    return `<template>
+  <div class="max-w-4xl mx-auto p-6">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold">${e.name} 時間軸</h1>
+      <button @click="$router.push({ name: '${e.name}Create' })"
+        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+        ➕ 新增
+      </button>
+    </div>
+
+    <div class="relative border-l-4 border-blue-400 pl-8 space-y-8">
+      <div v-for="(item, index) in sortedItems" :key="item.id" class="relative">
+        <!-- 時間點標記 -->
+        <div class="absolute -left-10 w-6 h-6 bg-blue-500 rounded-full border-4 border-white"></div>
+        
+        <!-- 時間標籤 -->
+        <div class="text-sm text-gray-500 mb-2">
+          {{ formatDateTime(item.createdAt) }}
+        </div>
+
+        <!-- 內容卡片 -->
+        <div class="bg-white rounded-lg shadow-lg p-5 hover:shadow-xl transition">
+          <div class="flex justify-between items-start mb-3">
+            <h3 class="text-xl font-bold">{{ item.name || item.title || '#' + item.id }}</h3>
+            <div class="flex gap-2">
+              <button @click="$router.push({ name: '${e.name}Edit', params: { id: item.id } })"
+                class="text-blue-600 hover:text-blue-800">✏️</button>
+              <button @click="deleteItem(item.id)"
+                class="text-red-600 hover:text-red-800">🗑️</button>
+            </div>
+          </div>
+          
+          <div class="space-y-1 text-gray-700">
+            ${displayFields}
+          </div>
+
+          <!-- 更新時間 -->
+          <div v-if="item.updatedAt" class="mt-3 pt-3 border-t text-xs text-gray-400">
+            最後更新: {{ formatDateTime(item.updatedAt) }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="!store.items.length" class="text-center text-gray-400 py-12">
+      <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <p>尚無任何記錄</p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, onMounted } from 'vue';
+import { use${e.name}Store } from '@/stores/${e.lowerName}Store';
+import { ${e.lowerName}Service } from '@/services/${e.lowerName}Service';
+
+const store = use${e.name}Store();
+
+// 按建立時間排序 (最新在上)
+const sortedItems = computed(() => 
+  [...store.items].sort((a, b) => 
+    new Date(b.createdAt) - new Date(a.createdAt)
+  )
+);
+
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return 'N/A';
+  const date = new Date(dateStr);
+  return date.toLocaleString('zh-TW', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+const deleteItem = async (id) => {
   if (confirm('確定刪除？')) {
     await ${e.lowerName}Service.remove(id);
     store.fetchAll();
   }
 };
-</script>
-`,
 
-  // ⭐ Form 保持不變
+onMounted(() => store.fetchAll());
+</script>
+`;
+  },
+
+  // ============================================================
+  // Form 保持不變
+  // ============================================================
   formVue: (e) => `<template>
   <CrudPageLayout :title="\`\${isEdit ? '編輯' : '新增'} ${e.name}\`">
     <div class="max-w-2xl mx-auto">
@@ -370,8 +630,10 @@ const save = async (data) => {
 </script>
 `,
 
-  // ⭐ Routes 保持不變
-  routes: (e) => `// src/router/${e.lowerName}Routes.js
+  // ============================================================
+  // Routes 保持不變
+  // ============================================================
+routes: (e) => `// src/router/${e.lowerName}Routes.js
 export const ${e.lowerName}Routes = [
   { path: '${e.lowerName}s', name: '${e.name}List', component: () => import('@/views/${e.lowerName}/${e.name}List.vue') },
   { path: '${e.lowerName}s/create', name: '${e.name}Create', component: () => import('@/views/${e.lowerName}/${e.name}Form.vue') },
@@ -390,7 +652,12 @@ export function getListTemplate(templateType) {
     case TEMPLATE_TYPES.CARD_GRID:
       return TEMPLATES.cardGridVue;
     case TEMPLATE_TYPES.MASTER_DETAIL:
+      return TEMPLATES.masterDetailVue; // ⭐ 修復：使用正確的主從表單版型
+    case TEMPLATE_TYPES.KANBAN:
+      return TEMPLATES.kanbanVue; // 🆕 看板版型
+    case TEMPLATE_TYPES.TIMELINE:
+      return TEMPLATES.timelineVue; // 🆕 時間軸版型
     default:
-      return TEMPLATES.listVue;
+      return TEMPLATES.simpleListVue;
   }
 }
