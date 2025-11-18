@@ -382,3 +382,22 @@ Thumbs.db
 # ========== Others ==========
 /temp/
 /logs/
+/frontend/src/views/product/ProductList.vue
+/frontend/src/router/ProductRoutes.js
+/frontend/src/router/RoleRoutes.js
+/frontend/src/router/UserRoutes.js
+/frontend/src/schema/productSchema.js
+/frontend/src/schema/roleSchema.js
+/frontend/src/schema/userSchema.js
+/frontend/src/services/productService.js
+/frontend/src/services/roleService.js
+/frontend/src/services/userService.js
+/frontend/src/stores/productStore.js
+/frontend/src/stores/roleStore.js
+/frontend/src/stores/userStore.js
+/bekt_frontend.txt
+/frontend/src/views/product/ProductForm.vue
+/frontend/src/views/role/RoleForm.vue
+/frontend/src/views/role/RoleList.vue
+/frontend/src/views/user/UserForm.vue
+/frontend/src/views/user/UserList.vue
