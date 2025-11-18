@@ -1,10 +1,9 @@
-// src/views/auth/Login.vue
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
     <div class="w-full max-w-md">
       <div class="bg-white rounded-lg shadow-lg p-8">
         <div class="text-center mb-8">
-          <h1 class="text-4xl font-bold text-grocy-cyan">🏠 Grocy</h1>
+          <h1 class="text-4xl font-bold text-grocy-cyan">Grocy</h1>
           <p class="text-gray-600 mt-2">家用庫存管理系統</p>
         </div>
 
@@ -48,44 +47,41 @@
   </div>
 </template>
 
-// src/views/auth/Login.vue
-
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'   // ← 加入 useRoute
 import { useAuthStore } from '@/stores/authStore'
 
 const router = useRouter()
+const route = useRoute()                     // ← 新增：取得 query 參數
 const authStore = useAuthStore()
 
 const form = ref({ username: '', password: '' })
 const loading = ref(false)
 const error = ref('')
 
-// **[核心修正區塊：handleLogin 函數]**
 const handleLogin = async () => {
   loading.value = true
   error.value = ''
-  authStore.error = null // 清除 store 中的錯誤訊息
+  authStore.error = null
 
   try {
     const success = await authStore.login(form.value.username, form.value.password)
     
     if (success) {
-      // **[核心修正]** 將導航目標修正為正確的路由名稱 'GeneratorSetup'
-      // 這是解決 Vue Router 警告的關鍵。
-      router.push({ name: 'GeneratorSetup' }) 
+      // 登入成功：支援 redirect 回原本想去的頁面
+      const redirectPath = route.query.redirect as string || { name: 'GeneratorSetup' }
+      
+      // 使用 replace 避免登入頁殘留在 history
+      router.replace(typeof redirectPath === 'string' ? redirectPath : redirectPath)
     } else {
-      // 從 Store 取得錯誤訊息
       error.value = authStore.error || '登入失敗，請檢查帳號密碼。'
     }
   } catch (err) {
-    // 理論上現在不會走到這裡，但保持健全性
     console.error("Login 組件發生未預期錯誤:", err);
     error.value = '連線錯誤，請檢查後端服務是否啟動。'
   } finally {
     loading.value = false
   }
 }
-// **[核心修正區塊結束]**
 </script>

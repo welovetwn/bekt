@@ -1,3 +1,4 @@
+<!-- src/views/SystemPreview.vue -->
 <template>
   <div class="flex min-h-screen bg-gray-50">
     <aside 
@@ -11,7 +12,7 @@
           v-show="isSidebarOpen" 
           class="text-lg font-bold whitespace-nowrap overflow-hidden transition-opacity duration-200"
         >
-          預覽選單
+          選單
         </h3>
         
         <button 
@@ -63,7 +64,7 @@
           :class="{ 'justify-center': !isSidebarOpen }"
           title="返回設定"
         >
-          <span class="text-xl flex-shrink-0">↩️</span>
+          <span class="text-xl flex-shrink-0">🏠</span>
           <span v-show="isSidebarOpen" class="ml-3 whitespace-nowrap overflow-hidden">返回設定</span>
         </router-link>
       </div>
@@ -71,9 +72,7 @@
 
     <div class="flex-grow bg-gray-100 p-6 overflow-auto h-screen w-full">
       <div class="bg-white rounded-lg shadow-lg min-h-[calc(100vh-3rem)] p-6">
-        <h2 class="text-2xl font-bold mb-6 border-b pb-4 text-gray-800">
-          預覽內容區
-        </h2>
+        <!-- (1) 已移除原本的 <h2>「預覽內容區」標題 -->
         <router-view />
       </div>
     </div>
@@ -81,19 +80,18 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'; // 加入 ref
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
-// **[新增]** 控制側邊欄展開/收合的狀態
+// 控制側邊欄展開/收合
 const isSidebarOpen = ref(true);
-
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
 };
 
-// 計算屬性：篩選出所有已生成的 List 頁面路由 (邏輯保持不變)
+// 動態產生左側選單（只顯示已生成的 List 頁面）
 const generatedMenuItems = computed(() => {
   const allRoutes = router.getRoutes();
   
@@ -104,7 +102,6 @@ const generatedMenuItems = computed(() => {
   return previewRoutes.map(route => {
     const routeName = route.name.toString();
     const entityName = routeName.replace('List', ''); 
-    
     let label = entityName;
     let icon = '📦';
 
